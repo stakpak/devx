@@ -1,8 +1,9 @@
 package main
 
 import (
-	"devopzilla.com/guku/client"
 	"github.com/spf13/cobra"
+
+	"devopzilla.com/guku/client"
 )
 
 var doCmd = &cobra.Command{
