@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
@@ -28,9 +29,11 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update/Install project dependencies",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// if err := client.Run(args[0]); err != nil {
-		// 	return err
-		// }
-		return nil
+		cueModPath, cueModExists := pkg.GetCueModParent()
+		if !cueModExists {
+			return fmt.Errorf("guku DevX project not found. Run `guku project init`")
+		}
+
+		return pkg.InstallCore(cueModPath)
 	},
 }
