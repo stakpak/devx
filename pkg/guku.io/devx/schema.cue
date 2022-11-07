@@ -15,8 +15,7 @@ package devx
 	$guku: component: string
 
 	id:        string
-	outputs:   _
-	$manifest: _
+	$children: _
 }
 
 #Workload: {
@@ -39,8 +38,14 @@ package devx
 		component: _
 	}
 
-	output: {
-		components: _
-		propagate:  _
+	feedforward: {
+		components: [string]: _
+	}
+
+	feedback: {
+		component: input.component
 	}
 }
+
+// func feedforward(context, component) -> components
+// func feedback(components) -> component

@@ -14,6 +14,7 @@ import "list"
 		port:   uint
 		target: uint | *port
 	}] & list.MinItems(0)
+	host: string
 }
 
 #Worker: {
@@ -48,10 +49,9 @@ import "list"
 	persistent: bool | *true
 	port:       uint | *5432
 	database:   string | *"default"
-	outputs: {
-		host:     string
-		username: string
-		password: string
-		url:      "postgresql://\(username):\(password)@\(host):\(port)/\(database)"
-	}
+
+	host:     string
+	username: string
+	password: string
+	url:      "postgresql://\(username):\(password)@\(host):\(port)/\(database)"
 }
