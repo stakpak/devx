@@ -1,7 +1,7 @@
 package devx
 
 #Application: {
-	$guku: "application"
+	$guku: "Application"
 
 	components: #Components
 }
