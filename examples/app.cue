@@ -27,6 +27,12 @@ devx.#Application & {
 			env: {
 				DB_URL: db.url
 			}
+			volumes: [
+				{
+					source: "bla"
+					target: "/tmp/bla"
+				},
+			]
 		}
 		db: devx.#PostgresDB & {
 			version:    "12.1"
