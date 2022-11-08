@@ -105,9 +105,16 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 
 		deps := []string{}
 		for _, t := range t.Dependencies() {
-			componentSelectors := t.Path().Selectors()
-			componentId := componentSelectors[len(componentSelectors)-1].String()
-			deps = append(deps, componentId)
+			id, err := t.Value().LookupPath(cue.ParsePath("$id")).String()
+			if err != nil {
+				return err
+			}
+			deps = append(deps, id)
+		}
+
+		transformer, err := populateGeneratedFields(transformer)
+		if err != nil {
+			return err
 		}
 
 		transformer, components, err := applyTransformerFeedForward(
@@ -161,11 +168,6 @@ func applyTransformerFeedForward(transformer cue.Value, context interface{}, com
 		return transformer, bottom, transformer.Err()
 	}
 
-	transformer, err := populate("feedforward", transformer)
-	if err != nil {
-		return transformer, bottom, err
-	}
-
 	// components don't have to be concrete
 	components := transformer.LookupPath(cue.ParsePath("feedforward"))
 	if components.Err() != nil {
@@ -193,11 +195,6 @@ func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.
 	)
 	if transformer.Err() != nil {
 		return bottom, transformer.Err()
-	}
-
-	transformer, err = populate("feedback", transformer)
-	if err != nil {
-		return bottom, err
 	}
 
 	transformer = transformer.FillPath(
@@ -233,12 +230,11 @@ func removeMeta(value cue.Value) (cue.Value, error) {
 	return result, nil
 }
 
-func populate(path string, v cue.Value) (cue.Value, error) {
+func populateGeneratedFields(v cue.Value) (cue.Value, error) {
 	bottom := v.Context().CompileString("_|_")
 
 	pathsToFill := []cue.Path{}
-	output := v.LookupPath(cue.ParsePath(path))
-	Walk(output, func(v cue.Value) bool {
+	Walk(v, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
 			isGenerated, _ := gukuAttr.Flag(0, "generate")
