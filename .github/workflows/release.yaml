@@ -26,6 +26,8 @@ jobs:
           goos: ${{ matrix.goos }}
           goarch: ${{ matrix.goarch }}
           goversion: "1.18"
+          md5sum: FALSE
+          sha256sum: TRUE
           project_path: "./cmd/guku"
-          binary_name: "guku_${{ steps.vars.outputs.tag }}"
+          binary_name: "guku"
           extra_files: README.md
