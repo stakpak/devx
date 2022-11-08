@@ -29,7 +29,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update/Install project dependencies",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cueModPath, cueModExists := pkg.GetCueModParent()
+		cueModPath, cueModExists := pkg.GetCueModParent(configDir)
 		if !cueModExists {
 			return fmt.Errorf("guku DevX project not found. Run `guku project init`")
 		}
