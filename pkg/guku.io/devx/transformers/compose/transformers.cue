@@ -227,9 +227,9 @@ import "guku.io/devx"
 	}
 
 	feedforward: components: {
-		_username: string @guku(generate)
-		_password: string @guku(generate,secret)
-		compose:   #ComposeManifest & {
+		compose: #ComposeManifest & {
+			_username: string @guku(generate)
+			_password: string @guku(generate,secret)
 			services: "\(input.component.$id)": {
 				image: "postgres:\(input.component.version)-alpine"
 				ports: [
@@ -255,7 +255,7 @@ import "guku.io/devx"
 
 	feedback: component: {
 		host:     "\(input.component.$id)"
-		username: feedforward.components._username
-		password: feedforward.components._password
+		username: feedforward.components.compose._username
+		password: feedforward.components.compose._password
 	}
 }
