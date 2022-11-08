@@ -13,11 +13,11 @@ import (
 )
 
 var (
-	EnvMapSelector    = cue.Str("environments")
-	ComponentSelector = cue.Str("components")
+	EnvironmentSelector = cue.Str("environments")
+	ComponentSelector   = cue.Str("components")
 )
 
-var envMap cue.Value
+var environmentMap cue.Value
 var env string
 
 func Run(environment string, configDir string) error {
@@ -35,9 +35,9 @@ func Run(environment string, configDir string) error {
 		return v.Err()
 	}
 
-	envMapPath := cue.MakePath(EnvMapSelector)
-	envMap = v.LookupPath(envMapPath)
-	if !envMap.Exists() {
+	environmentPath := cue.MakePath(EnvironmentSelector)
+	environmentMap = v.LookupPath(environmentPath)
+	if !environmentMap.Exists() {
 		return fmt.Errorf("Couldn't find environments")
 	}
 
@@ -121,7 +121,7 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 			deps = append(deps, componentId)
 		}
 
-		transformer := envMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentName)))
+		transformer := environmentMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentName)))
 		if transformer.Err() != nil {
 			return transformer.Err()
 		}
