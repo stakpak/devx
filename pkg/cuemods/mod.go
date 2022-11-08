@@ -1,4 +1,4 @@
-package pkg
+package cuemods
 
 import (
 	"context"
@@ -28,7 +28,7 @@ func InstallCore(cueModPath string) error {
 	return extractModules(pkgDir)
 }
 
-func CueModInit(ctx context.Context, parentDir, module string) error {
+func Init(ctx context.Context, parentDir, module string) error {
 	absParentDir, err := filepath.Abs(parentDir)
 	if err != nil {
 		return err

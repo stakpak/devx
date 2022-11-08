@@ -3,7 +3,7 @@ package main
 import (
 	"github.com/spf13/cobra"
 
-	"devopzilla.com/guku/client"
+	"devopzilla.com/guku/internal/client"
 )
 
 var doCmd = &cobra.Command{

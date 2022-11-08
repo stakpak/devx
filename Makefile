@@ -1,2 +1,2 @@
 build:
-	go build -o ./bin/guku ./cmd
+	go build -o ./bin/ ./cmd/guku
