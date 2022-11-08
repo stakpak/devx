@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -37,7 +38,7 @@ func Run(environment string, configDir string) error {
 	envMapPath := cue.MakePath(EnvMapSelector)
 	envMap = v.LookupPath(envMapPath)
 	if !envMap.Exists() {
-		return fmt.Errorf("Couldn't find EnvMap")
+		return fmt.Errorf("Couldn't find environments")
 	}
 
 	componentsPath := cue.MakePath(ComponentSelector)
@@ -64,12 +65,12 @@ func Run(environment string, configDir string) error {
 
 	result := flow.Value()
 
-	printComposeManifest(result)
+	printManifest(result)
 
 	return nil
 }
 
-func printComposeManifest(result cue.Value) {
+func printManifest(result cue.Value) {
 	manifest := result.Context().CompileString("{}")
 
 	componentsPath := cue.MakePath(ComponentSelector)
@@ -79,13 +80,18 @@ func printComposeManifest(result cue.Value) {
 	}
 	for iter.Next() {
 		manifest = manifest.Fill(
-			iter.Value().Lookup("$manifest"),
+			iter.Value().Lookup("$children"),
 		)
 	}
 
 	iter, _ = manifest.Fields()
 	for iter.Next() {
-		data, err := yaml.Encode(iter.Value())
+		v, err := removeMeta(iter.Value())
+		if err != nil {
+			panic(err)
+		}
+
+		data, err := yaml.Encode(v)
 		if err != nil {
 			panic(err)
 		}
@@ -119,39 +125,40 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 		if transformer.Err() != nil {
 			return transformer.Err()
 		}
-		outputComponent, outputPropagate, err := ApplyTransformer(
+
+		transformer, components, err := applyTransformerFeedForward(
 			transformer,
-			t.Value(),
 			map[string][]string{
 				"dependencies": deps,
 			},
+			t.Value(),
 		)
 		if err != nil {
 			return err
 		}
 
-		updatedValue := t.Value()
-		updatedValue = updatedValue.FillPath(
-			cue.ParsePath("$manifest"),
-			outputComponent,
-		)
-		updatedValue = updatedValue.FillPath(
-			cue.ParsePath("outputs"),
-			outputPropagate,
-		)
+		// call next transformer
 
-		return t.Fill(updatedValue)
+		component, err := applyTransformerFeedBack(
+			transformer,
+			components,
+		)
+		if err != nil {
+			return err
+		}
+
+		return t.Fill(component)
 	}), nil
 }
 
-func ApplyTransformer(transformer cue.Value, component cue.Value, context interface{}) (cue.Value, cue.Value, error) {
+func applyTransformerFeedForward(transformer cue.Value, context interface{}, component cue.Value) (cue.Value, cue.Value, error) {
 	ctx := transformer.Context()
 	bottom := ctx.CompileString("_|_")
 
 	transformerInputType, _ := transformer.LookupPath(cue.ParsePath("$guku.transformer.component")).String()
 	componentType, _ := component.LookupPath(cue.ParsePath("$guku.component")).String()
 	if transformerInputType != componentType {
-		return bottom, bottom, fmt.Errorf("Transformer expecting input component %s but got %s", transformerInputType, componentType)
+		return transformer, bottom, fmt.Errorf("Transformer expecting input component %s but got %s", transformerInputType, componentType)
 	}
 
 	input := ctx.CompileString("{}")
@@ -163,11 +170,79 @@ func ApplyTransformer(transformer cue.Value, component cue.Value, context interf
 		input,
 	)
 	if transformer.Err() != nil {
-		return bottom, bottom, transformer.Err()
+		return transformer, bottom, transformer.Err()
 	}
 
+	transformer, err := populate("feedforward", transformer)
+	if err != nil {
+		return transformer, bottom, err
+	}
+
+	components, err := GetConcrete(transformer, "feedforward.components")
+	if err != nil {
+		return transformer, bottom, err
+	}
+	return transformer, components, nil
+}
+
+func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.Value, error) {
+	ctx := transformer.Context()
+	bottom := ctx.CompileString("_|_")
+
+	input := ctx.CompileString("{}")
+	input = input.FillPath(cue.ParsePath("feedforward.components"), components)
+
+	transformer = transformer.FillPath(
+		cue.MakePath(),
+		input,
+	)
+	if transformer.Err() != nil {
+		return bottom, transformer.Err()
+	}
+
+	transformer, err := populate("feedback", transformer)
+	if err != nil {
+		return bottom, err
+	}
+
+	transformer = transformer.FillPath(
+		cue.ParsePath("feedback.component.$children"),
+		components,
+	)
+
+	component, err := GetConcrete(transformer, "feedback.component")
+	if err != nil {
+		return bottom, err
+	}
+	return component, nil
+}
+
+func removeMeta(value cue.Value) (cue.Value, error) {
+	result := value.Context().CompileString("{}")
+
+	iter, err := value.Fields()
+	if err != nil {
+		return result, err
+	}
+
+	for iter.Next() {
+		v := iter.Value()
+		selectors := v.Path().Selectors()
+		selectors = selectors[1:]
+		path := cue.MakePath(selectors...)
+		if !strings.HasPrefix(path.String(), "$") {
+			result = result.FillPath(path, v)
+		}
+	}
+
+	return result, nil
+}
+
+func populate(path string, v cue.Value) (cue.Value, error) {
+	bottom := v.Context().CompileString("_|_")
+
 	pathsToFill := []cue.Path{}
-	output := transformer.LookupPath(cue.ParsePath("output"))
+	output := v.LookupPath(cue.ParsePath(path))
 	Walk(output, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
@@ -183,22 +258,13 @@ func ApplyTransformer(transformer cue.Value, component cue.Value, context interf
 	for _, path := range pathsToFill {
 		selectors := path.Selectors()[1:]
 		fieldPath := cue.MakePath(selectors...)
-		transformer = transformer.FillPath(fieldPath, "dummy")
-		if transformer.Err() != nil {
-			return bottom, bottom, transformer.Err()
+		v = v.FillPath(fieldPath, "dummy")
+		if v.Err() != nil {
+			return bottom, v.Err()
 		}
 	}
 
-	outputComponent, err := GetConcrete(transformer, "output.components")
-	if err != nil {
-		return bottom, bottom, err
-	}
-	outputPropagate, err := GetConcrete(transformer, "output.propagate")
-	if err != nil {
-		return bottom, bottom, err
-	}
-
-	return outputComponent, outputPropagate, nil
+	return v, nil
 }
 
 func GetConcrete(v cue.Value, path string) (cue.Value, error) {

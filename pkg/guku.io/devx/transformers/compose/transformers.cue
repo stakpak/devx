@@ -3,6 +3,9 @@ package compose
 import "guku.io/devx"
 
 #ComposeManifest: {
+	devx.#Component
+	$guku: component: "ComposeManifest"
+
 	version: string | *"3"
 	volumes: [string]: null
 	services: [string]: {
@@ -63,7 +66,7 @@ import "guku.io/devx"
 	}
 
 	feedforward: components: compose: #ComposeManifest & {
-		services: "\(input.component.id)": {
+		services: "\(input.component.$id)": {
 			image: input.component.image
 			ports: [
 				for p in input.component.ports {
@@ -76,7 +79,7 @@ import "guku.io/devx"
 	}
 
 	feedback: component: {
-		host: "\(input.component.id)"
+		host: "\(input.component.$id)"
 	}
 
 }
@@ -227,7 +230,7 @@ import "guku.io/devx"
 		_username: string @guku(generate)
 		_password: string @guku(generate,secret)
 		compose:   #ComposeManifest & {
-			services: "\(input.component.id)": {
+			services: "\(input.component.$id)": {
 				image: "postgres:\(input.component.version)-alpine"
 				ports: [
 					"\(input.component.port)",
@@ -251,7 +254,7 @@ import "guku.io/devx"
 	}
 
 	feedback: component: {
-		host:     "\(input.component.id)"
+		host:     "\(input.component.$id)"
 		username: feedforward.components._username
 		password: feedforward.components._password
 	}

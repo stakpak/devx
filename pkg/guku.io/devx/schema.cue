@@ -3,19 +3,21 @@ package devx
 #Application: {
 	$guku: "application"
 
-	components: [Id=string]: {
-		#Component
-		...
-	} & {
-		id: Id
-	}
+	components: #Components
+}
+
+#Components: [Id=string]: {
+	#Component
+	...
+} & {
+	$id: Id
 }
 
 #Component: {
 	$guku: component: string
 
-	id:        string
-	$children: _
+	$id:        string
+	$children?: _
 }
 
 #Workload: {
@@ -34,12 +36,15 @@ package devx
 	}
 
 	input: {
-		context:   _
-		component: _
+		context: _
+		component: {
+			#Component
+			...
+		}
 	}
 
 	feedforward: {
-		components: [string]: _
+		components: #Components
 	}
 
 	feedback: {
