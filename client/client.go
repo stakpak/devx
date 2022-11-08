@@ -20,8 +20,8 @@ var (
 var environmentMap cue.Value
 var env string
 
-func Run(environment string, configDir string) error {
-	env = environment
+func Run(chosenEnvironment string, configDir string) error {
+	env = chosenEnvironment
 	buildConfig := &cueload.Config{
 		Dir:     configDir,
 		Overlay: map[string]cueload.Source{},
@@ -47,23 +47,10 @@ func Run(environment string, configDir string) error {
 		return fmt.Errorf("Couldn't find components")
 	}
 
-	cfg := &cueflow.Config{
-		FindHiddenTasks: true,
-		Root:            cue.MakePath(ComponentSelector),
-	}
-
-	flow := cueflow.New(
-		cfg,
-		v,
-		taskFunc,
-	)
-
-	err := flow.Run(context.TODO())
+	result, err := RunFlow(v)
 	if err != nil {
 		return err
 	}
-
-	result := flow.Value()
 
 	printManifest(result)
 
@@ -108,22 +95,19 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 	}
 
 	return cueflow.RunnerFunc(func(t *cueflow.Task) error {
-		componentName, err := t.Value().LookupPath(namePath).String()
-		if err != nil {
-			return err
+		transformer := environmentMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentName)))
+		if transformer.Err() != nil {
+			if strings.Contains(transformer.Err().Error(), fmt.Sprintf("field not found: %s", componentName)) {
+				return nil
+			}
+			return transformer.Err()
 		}
 
 		deps := []string{}
-
 		for _, t := range t.Dependencies() {
 			componentSelectors := t.Path().Selectors()
 			componentId := componentSelectors[len(componentSelectors)-1].String()
 			deps = append(deps, componentId)
-		}
-
-		transformer := environmentMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentName)))
-		if transformer.Err() != nil {
-			return transformer.Err()
 		}
 
 		transformer, components, err := applyTransformerFeedForward(
@@ -137,11 +121,15 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 			return err
 		}
 
-		// call next transformer
+		// run flow for nested components (this will update components)
+		components, err = RunFlow(components)
+		if err != nil {
+			return err
+		}
 
 		component, err := applyTransformerFeedBack(
 			transformer,
-			components,
+			components.LookupPath(cue.MakePath(ComponentSelector)),
 		)
 		if err != nil {
 			return err
@@ -178,16 +166,23 @@ func applyTransformerFeedForward(transformer cue.Value, context interface{}, com
 		return transformer, bottom, err
 	}
 
-	components, err := GetConcrete(transformer, "feedforward.components")
-	if err != nil {
-		return transformer, bottom, err
+	// components don't have to be concrete
+	components := transformer.LookupPath(cue.ParsePath("feedforward"))
+	if components.Err() != nil {
+		return transformer, bottom, components.Err()
 	}
+
 	return transformer, components, nil
 }
 
 func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.Value, error) {
 	ctx := transformer.Context()
 	bottom := ctx.CompileString("_|_")
+
+	err := components.Validate(cue.Concrete(true))
+	if err != nil {
+		return bottom, err
+	}
 
 	input := ctx.CompileString("{}")
 	input = input.FillPath(cue.ParsePath("feedforward.components"), components)
@@ -200,7 +195,7 @@ func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.
 		return bottom, transformer.Err()
 	}
 
-	transformer, err := populate("feedback", transformer)
+	transformer, err = populate("feedback", transformer)
 	if err != nil {
 		return bottom, err
 	}
@@ -280,6 +275,7 @@ func GetConcrete(v cue.Value, path string) (cue.Value, error) {
 	}
 	return value, nil
 }
+
 func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
 	switch v.Kind() {
 	case cue.StructKind:
@@ -307,4 +303,24 @@ func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
 	if after != nil {
 		after(v)
 	}
+}
+
+func RunFlow(v cue.Value) (cue.Value, error) {
+	cfg := &cueflow.Config{
+		FindHiddenTasks: true,
+		Root:            cue.MakePath(ComponentSelector),
+	}
+
+	flow := cueflow.New(
+		cfg,
+		v,
+		taskFunc,
+	)
+
+	err := flow.Run(context.TODO())
+	if err != nil {
+		return v, err
+	}
+
+	return flow.Value(), nil
 }
