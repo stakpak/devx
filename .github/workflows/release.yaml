@@ -1,8 +1,8 @@
 name: Release
 
 on:
-  push:
-    tags: ["v*.*.*"]
+  release:
+    types: [created]
 
 jobs:
   releases-matrix:
@@ -20,8 +20,6 @@ jobs:
             goos: windows
     steps:
       - uses: actions/checkout@v3
-      - id: vars
-        run: echo ::set-output name=tag::${GITHUB_REF#refs/*/}
       - uses: wangyoucao577/go-release-action@v1.32
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
