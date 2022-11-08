@@ -114,3 +114,51 @@ import (
 		password: feedforward.components.compose._password
 	}
 }
+
+#ComposeMysqlDB: devx.#Transformer & {
+	$guku: transformer: {
+		name:      "ComposeMysqlDB"
+		component: "MysqlDB"
+	}
+
+	input: {
+		component: devx.#MysqlDB
+		context: {
+			dependencies: [...string]
+		}
+	}
+
+	feedforward: components: {
+		compose: #ComposeManifest & {
+			_username: string @guku(generate)
+			_password: string @guku(generate,secret)
+			services: "\(input.component.$id)": {
+				image: "mysql:\(input.component.version)"
+				ports: [
+					"\(input.component.port)",
+				]
+				if input.component.persistent {
+					volumes: [
+						"mysql-data:/var/lib/mysql",
+					]
+				}
+				environment: {
+					MYSQL_ROOT_PASSWORD: _password
+					MYSQL_USER:          _username
+					MYSQL_PASSWORD:      _password
+					MYSQL_DATABASE:      input.component.database
+				}
+				depends_on: input.context.dependencies
+			}
+			if input.component.persistent {
+				volumes: "mysql-data": null
+			}
+		}
+	}
+
+	feedback: component: {
+		host:     "\(input.component.$id)"
+		username: feedforward.components.compose._username
+		password: feedforward.components.compose._password
+	}
+}

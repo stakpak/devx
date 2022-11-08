@@ -55,3 +55,18 @@ import "list"
 	password: string
 	url:      "postgresql://\(username):\(password)@\(host):\(port)/\(database)"
 }
+
+#MysqlDB: {
+	#Component
+	$guku: component: "MysqlDB"
+
+	version:    string
+	persistent: bool | *true
+	port:       uint | *3306
+	database:   string | *"default"
+
+	host:     string
+	username: string
+	password: string
+	url:      "mysql://\(username):\(password)@\(host):\(port)/\(database)"
+}

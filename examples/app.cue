@@ -25,7 +25,8 @@ devx.#Application & {
 				},
 			]
 			env: {
-				DB_URL: db.url
+				PGDB_URL: db.url
+				MYDB_URL: mydb.url
 			}
 			volumes: [
 				{
@@ -36,6 +37,10 @@ devx.#Application & {
 		}
 		db: devx.#PostgresDB & {
 			version:    "12.1"
+			persistent: true
+		}
+		mydb: devx.#MysqlDB & {
+			version:    "8"
 			persistent: true
 		}
 	}
