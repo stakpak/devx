@@ -1,4 +1,4 @@
-package devx
+package traits
 
 #Workload: {
 	$guku: traits: Workload: null

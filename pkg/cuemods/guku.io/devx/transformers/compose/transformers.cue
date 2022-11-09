@@ -3,6 +3,7 @@ package compose
 import (
 	"strings"
 	"guku.io/devx"
+	devxc "guku.io/devx/components"
 )
 
 #ComposeManifest: {
@@ -28,7 +29,7 @@ import (
 	}
 
 	input: {
-		component: devx.#Service
+		component: devxc.#Service
 		context: {
 			dependencies: [...string]
 		}
@@ -75,7 +76,7 @@ import (
 	}
 
 	input: {
-		component: devx.#PostgresDB
+		component: devxc.#PostgresDB
 		context: {
 			dependencies: [...string]
 		}
@@ -122,7 +123,7 @@ import (
 	}
 
 	input: {
-		component: devx.#MysqlDB
+		component: devxc.#MysqlDB
 		context: {
 			dependencies: [...string]
 		}

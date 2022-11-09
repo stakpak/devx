@@ -1,11 +1,16 @@
-package devx
+package components
+
+import (
+	"guku.io/devx"
+	"guku.io/devx/traits"
+)
 
 import "list"
 
 #Service: {
-	#Component
-	#Workload
-	#Replicable
+	devx.#Component
+	traits.#Workload
+	traits.#Replicable
 	$guku: component: "Service"
 
 	ports: [...{
@@ -16,30 +21,30 @@ import "list"
 }
 
 #Worker: {
-	#Component
-	#Workload
-	#Replicable
+	devx.#Component
+	traits.#Workload
+	traits.#Replicable
 	$guku: component: "Worker"
 }
 
 #Job: {
-	#Component
-	#Workload
+	devx.#Component
+	traits.#Workload
 	$guku: component: "Job"
 
 	backoffLimit: uint | *0
 }
 
 #CronJob: {
-	#Component
-	#Workload
+	devx.#Component
+	traits.#Workload
 	$guku: component: "CronJob"
 
 	schedule: string
 }
 
 #PostgresDB: {
-	#Component
+	devx.#Component
 	$guku: component: "PostgresDB"
 
 	version:    string
@@ -54,7 +59,7 @@ import "list"
 }
 
 #MysqlDB: {
-	#Component
+	devx.#Component
 	$guku: component: "MysqlDB"
 
 	version:    string

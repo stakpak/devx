@@ -2,11 +2,12 @@ package main
 
 import (
 	"guku.io/devx"
+	devxc "guku.io/devx/components"
 )
 
 devx.#Application & {
 	components: {
-		proxy: devx.#Service & {
+		proxy: devxc.#Service & {
 			image: "nginx"
 			ports: [
 				{
@@ -17,7 +18,7 @@ devx.#Application & {
 			env: APP_URL:
 				"http://\(app.host):\(app.ports[0].port)"
 		}
-		app: devx.#Service & {
+		app: devxc.#Service & {
 			image: "app:v1"
 			ports: [
 				{
@@ -35,11 +36,11 @@ devx.#Application & {
 				},
 			]
 		}
-		db: devx.#PostgresDB & {
+		db: devxc.#PostgresDB & {
 			version:    "12.1"
 			persistent: true
 		}
-		mydb: devx.#MysqlDB & {
+		mydb: devxc.#MysqlDB & {
 			version:    "8"
 			persistent: true
 		}
