@@ -10,18 +10,21 @@ package devx
 	#Component
 	...
 } & {
-	$id: Id
+	$guku: id: Id
 }
 
 #Component: {
-	$guku: component: string
-
-	$id:        string
-	$children?: _
+	$guku: {
+		component: string
+		id:        string
+		traits: [string]: _
+		children?: _
+	}
 }
 
 #Workload: {
 	#Component
+	$guku: traits: Workload: null
 
 	image: string
 	command: [...string]

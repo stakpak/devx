@@ -35,7 +35,7 @@ import (
 	}
 
 	feedforward: components: compose: #ComposeManifest & {
-		services: "\(input.component.$id)": {
+		services: "\(input.component.$guku.id)": {
 			image: input.component.image
 			ports: [
 				for p in input.component.ports {
@@ -63,7 +63,7 @@ import (
 	}
 
 	feedback: component: {
-		host: "\(input.component.$id)"
+		host: "\(input.component.$guku.id)"
 	}
 
 }
@@ -85,7 +85,7 @@ import (
 		compose: #ComposeManifest & {
 			_username: string @guku(generate)
 			_password: string @guku(generate,secret)
-			services: "\(input.component.$id)": {
+			services: "\(input.component.$guku.id)": {
 				image: "postgres:\(input.component.version)-alpine"
 				ports: [
 					"\(input.component.port)",
@@ -109,7 +109,7 @@ import (
 	}
 
 	feedback: component: {
-		host:     "\(input.component.$id)"
+		host:     "\(input.component.$guku.id)"
 		username: feedforward.components.compose._username
 		password: feedforward.components.compose._password
 	}
@@ -132,7 +132,7 @@ import (
 		compose: #ComposeManifest & {
 			_username: string @guku(generate)
 			_password: string @guku(generate,secret)
-			services: "\(input.component.$id)": {
+			services: "\(input.component.$guku.id)": {
 				image: "mysql:\(input.component.version)"
 				ports: [
 					"\(input.component.port)",
@@ -157,7 +157,7 @@ import (
 	}
 
 	feedback: component: {
-		host:     "\(input.component.$id)"
+		host:     "\(input.component.$guku.id)"
 		username: feedforward.components.compose._username
 		password: feedforward.components.compose._password
 	}

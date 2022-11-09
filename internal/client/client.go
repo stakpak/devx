@@ -67,7 +67,7 @@ func printManifest(result cue.Value) {
 	}
 	for iter.Next() {
 		manifest = manifest.Fill(
-			iter.Value().Lookup("$children"),
+			iter.Value().LookupPath(cue.ParsePath("$guku.children")),
 		)
 	}
 
@@ -105,7 +105,7 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 
 		deps := []string{}
 		for _, t := range t.Dependencies() {
-			id, err := t.Value().LookupPath(cue.ParsePath("$id")).String()
+			id, err := t.Value().LookupPath(cue.ParsePath("$guku.id")).String()
 			if err != nil {
 				return err
 			}
@@ -198,7 +198,7 @@ func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.
 	}
 
 	transformer = transformer.FillPath(
-		cue.ParsePath("feedback.component.$children"),
+		cue.ParsePath("feedback.component.$guku.children"),
 		components,
 	)
 
