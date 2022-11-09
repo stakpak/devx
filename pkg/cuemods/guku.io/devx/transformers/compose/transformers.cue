@@ -23,10 +23,7 @@ import (
 }
 
 #ComposeService: devx.#Transformer & {
-	$guku: transformer: {
-		name:      "ComposeService"
-		component: "Service"
-	}
+	$guku: transformer: "ComposeService"
 
 	input: {
 		component: devxc.#Service
@@ -70,10 +67,7 @@ import (
 }
 
 #ComposePostgresDB: devx.#Transformer & {
-	$guku: transformer: {
-		name:      "ComposePostgresDB"
-		component: "PostgresDB"
-	}
+	$guku: transformer: "ComposePostgresDB"
 
 	input: {
 		component: devxc.#PostgresDB
@@ -117,10 +111,7 @@ import (
 }
 
 #ComposeMysqlDB: devx.#Transformer & {
-	$guku: transformer: {
-		name:      "ComposeMysqlDB"
-		component: "MysqlDB"
-	}
+	$guku: transformer: "ComposeMysqlDB"
 
 	input: {
 		component: devxc.#MysqlDB

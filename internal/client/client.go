@@ -150,7 +150,7 @@ func applyTransformerFeedForward(transformer cue.Value, context interface{}, com
 	ctx := transformer.Context()
 	bottom := ctx.CompileString("_|_")
 
-	transformerInputType, _ := transformer.LookupPath(cue.ParsePath("$guku.transformer.component")).String()
+	transformerInputType, _ := transformer.LookupPath(cue.ParsePath("input.component.$guku.component")).String()
 	componentType, _ := component.LookupPath(cue.ParsePath("$guku.component")).String()
 	if transformerInputType != componentType {
 		return transformer, bottom, fmt.Errorf("Transformer expecting input component %s but got %s", transformerInputType, componentType)

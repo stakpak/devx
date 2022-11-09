@@ -23,17 +23,14 @@ package devx
 }
 
 #Transformer: {
-	$guku: transformer: {
-		name:      string
-		component: string
-	}
+	$guku: transformer: string
 
 	input: {
-		context: _
 		component: {
 			#Component
 			...
 		}
+		context: _
 	}
 
 	feedforward: {
