@@ -3,13 +3,11 @@ package devx
 import "list"
 
 #Service: {
+	#Component
 	#Workload
+	#Replicable
 	$guku: component: "Service"
 
-	replicas: {
-		min: uint | *1
-		max: uint & >=min | *min
-	}
 	ports: [...{
 		port:   uint
 		target: uint | *port
@@ -18,16 +16,14 @@ import "list"
 }
 
 #Worker: {
+	#Component
 	#Workload
+	#Replicable
 	$guku: component: "Worker"
-
-	replicas: {
-		min: uint | *1
-		max: uint & >=min | *min
-	}
 }
 
 #Job: {
+	#Component
 	#Workload
 	$guku: component: "Job"
 
@@ -35,6 +31,7 @@ import "list"
 }
 
 #CronJob: {
+	#Component
 	#Workload
 	$guku: component: "CronJob"
 

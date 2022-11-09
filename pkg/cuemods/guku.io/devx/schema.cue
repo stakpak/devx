@@ -22,22 +22,6 @@ package devx
 	}
 }
 
-#Workload: {
-	#Component
-	$guku: traits: Workload: null
-
-	image: string
-	command: [...string]
-	args: [...string]
-	env: [string]:    string
-	mounts: [string]: string
-	volumes: [...{
-		source:   string
-		target:   string
-		readOnly: bool | *true
-	}]
-}
-
 #Transformer: {
 	$guku: transformer: {
 		name:      string
