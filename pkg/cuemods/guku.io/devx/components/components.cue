@@ -5,19 +5,12 @@ import (
 	"guku.io/devx/traits"
 )
 
-import "list"
-
 #Service: {
 	devx.#Component
 	traits.#Workload
 	traits.#Replicable
+	traits.#Exposable
 	$guku: component: "Service"
-
-	ports: [...{
-		port:   uint
-		target: uint | *port
-	}] & list.MinItems(0)
-	host: string
 }
 
 #Worker: {
@@ -45,6 +38,7 @@ import "list"
 
 #PostgresDB: {
 	devx.#Component
+	traits.#Postgres
 	$guku: component: "PostgresDB"
 
 	version:    string
@@ -60,6 +54,7 @@ import "list"
 
 #MysqlDB: {
 	devx.#Component
+	traits.#Mysql
 	$guku: component: "MysqlDB"
 
 	version:    string

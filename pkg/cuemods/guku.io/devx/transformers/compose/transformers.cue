@@ -3,7 +3,7 @@ package compose
 import (
 	"strings"
 	"guku.io/devx"
-	devxc "guku.io/devx/components"
+	"guku.io/devx/traits"
 )
 
 #ComposeManifest: {
@@ -26,7 +26,13 @@ import (
 	$guku: transformer: "ComposeService"
 
 	input: {
-		component: devxc.#Service
+		component: {
+			devx.#Component
+			traits.#Workload
+			traits.#Replicable
+			traits.#Exposable
+			...
+		}
 		context: {
 			dependencies: [...string]
 		}
@@ -70,7 +76,11 @@ import (
 	$guku: transformer: "ComposePostgresDB"
 
 	input: {
-		component: devxc.#PostgresDB
+		component: {
+			devx.#Component
+			traits.#Postgres
+			...
+		}
 		context: {
 			dependencies: [...string]
 		}
@@ -114,7 +124,11 @@ import (
 	$guku: transformer: "ComposeMysqlDB"
 
 	input: {
-		component: devxc.#MysqlDB
+		component: {
+			devx.#Component
+			traits.#Mysql
+			...
+		}
 		context: {
 			dependencies: [...string]
 		}

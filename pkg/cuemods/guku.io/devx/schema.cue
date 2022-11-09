@@ -6,10 +6,7 @@ package devx
 	components: #Components
 }
 
-#Components: [Id=string]: {
-	#Component
-	...
-} & {
+#Components: [Id=string]: #Component & {
 	$guku: id: Id
 }
 
@@ -17,20 +14,23 @@ package devx
 	$guku: {
 		component: string
 		id:        string
-		traits: [string]: _
 		children?: _
 	}
+	#Trait
+	...
+}
+
+#Trait: {
+	$guku: traits: [string]: _
+	...
 }
 
 #Transformer: {
 	$guku: transformer: string
 
 	input: {
-		component: {
-			#Component
-			...
-		}
-		context: _
+		component: #Component
+		context:   _
 	}
 
 	feedforward: {

@@ -112,11 +112,6 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 			deps = append(deps, id)
 		}
 
-		transformer, err := populateGeneratedFields(transformer)
-		if err != nil {
-			return err
-		}
-
 		transformer, components, err := applyTransformerFeedForward(
 			transformer,
 			map[string][]string{
@@ -150,10 +145,17 @@ func applyTransformerFeedForward(transformer cue.Value, context interface{}, com
 	ctx := transformer.Context()
 	bottom := ctx.CompileString("_|_")
 
-	transformerInputType, _ := transformer.LookupPath(cue.ParsePath("input.component.$guku.component")).String()
-	componentType, _ := component.LookupPath(cue.ParsePath("$guku.component")).String()
-	if transformerInputType != componentType {
-		return transformer, bottom, fmt.Errorf("Transformer expecting input component %s but got %s", transformerInputType, componentType)
+	transformerInputTraits := transformer.LookupPath(cue.ParsePath("input.component.$guku.traits"))
+	componentTraits := component.LookupPath(cue.ParsePath("$guku.traits"))
+
+	transIter, _ := transformerInputTraits.Fields()
+	for transIter.Next() {
+		trait := cue.MakePath(transIter.Selector())
+		hasTrait := componentTraits.LookupPath(trait).Exists()
+		if !hasTrait {
+			metadata := component.LookupPath(cue.ParsePath("$guku"))
+			return transformer, bottom, fmt.Errorf("Transformer input component %s missing trait %s", metadata, transIter.Selector())
+		}
 	}
 
 	input := ctx.CompileString("{}")
@@ -166,6 +168,11 @@ func applyTransformerFeedForward(transformer cue.Value, context interface{}, com
 	)
 	if transformer.Err() != nil {
 		return transformer, bottom, transformer.Err()
+	}
+
+	transformer, err := populateGeneratedFields(transformer)
+	if err != nil {
+		return transformer, bottom, err
 	}
 
 	// components don't have to be concrete

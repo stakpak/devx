@@ -7,7 +7,8 @@ import (
 
 devx.#Application & {
 	components: {
-		proxy: devxc.#Service & {
+		proxy: {
+			devxc.#Service
 			image: "nginx"
 			ports: [
 				{
@@ -18,7 +19,8 @@ devx.#Application & {
 			env: APP_URL:
 				"http://\(app.host):\(app.ports[0].port)"
 		}
-		app: devxc.#Service & {
+		app: {
+			devxc.#Service
 			image: "app:v1"
 			ports: [
 				{
@@ -36,11 +38,13 @@ devx.#Application & {
 				},
 			]
 		}
-		db: devxc.#PostgresDB & {
+		db: {
+			devxc.#PostgresDB
 			version:    "12.1"
 			persistent: true
 		}
-		mydb: devxc.#MysqlDB & {
+		mydb: {
+			devxc.#MysqlDB
 			version:    "8"
 			persistent: true
 		}
