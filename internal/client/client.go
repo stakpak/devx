@@ -6,10 +6,10 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
-	"cuelang.org/go/cue/cuecontext"
-	cueload "cuelang.org/go/cue/load"
 	"cuelang.org/go/encoding/yaml"
 	cueflow "cuelang.org/go/tools/flow"
+
+	"go.dagger.io/dagger/compiler"
 )
 
 var (
@@ -17,22 +17,15 @@ var (
 	ComponentSelector   = cue.Str("components")
 )
 
-var environmentMap cue.Value
+var environmentMap *compiler.Value
 var env string
 
 func Run(chosenEnvironment string, configDir string) error {
 	env = chosenEnvironment
-	buildConfig := &cueload.Config{
-		Dir:     configDir,
-		Overlay: map[string]cueload.Source{},
-	}
-	instances := cueload.Instances([]string{}, buildConfig)
 
-	ctx := cuecontext.New()
-
-	v := ctx.BuildInstance(instances[0])
-	if v.Err() != nil {
-		return v.Err()
+	v, err := compiler.Build(context.TODO(), configDir, nil)
+	if err != nil {
+		return err
 	}
 
 	environmentPath := cue.MakePath(EnvironmentSelector)
@@ -52,13 +45,13 @@ func Run(chosenEnvironment string, configDir string) error {
 		return err
 	}
 
-	printManifest(result)
+	printManifest(result.Cue())
 
 	return nil
 }
 
 func printManifest(result cue.Value) {
-	manifest := result.Context().CompileString("{}")
+	manifest := result.Context().CompileString("_")
 
 	componentsPath := cue.MakePath(ComponentSelector)
 	iter, err := result.LookupPath(componentsPath).Fields()
@@ -86,48 +79,54 @@ func printManifest(result cue.Value) {
 	}
 }
 
-func taskFunc(v cue.Value) (cueflow.Runner, error) {
+func taskFunc(flowVal cue.Value) (cueflow.Runner, error) {
+	v := compiler.Wrap(flowVal)
+
 	namePath := cue.ParsePath("$guku.component")
 	componentName := v.LookupPath(namePath)
 	if !componentName.Exists() {
 		// Not a task
 		return nil, nil
 	}
+	componentNameString, _ := componentName.String()
 
 	return cueflow.RunnerFunc(func(t *cueflow.Task) error {
-		transformer := environmentMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentName)))
-		if transformer.Err() != nil {
-			if strings.Contains(transformer.Err().Error(), fmt.Sprintf("field not found: %s", componentName)) {
+		value := compiler.Wrap(t.Value())
+
+		transformer := environmentMap.LookupPath(cue.ParsePath(fmt.Sprintf("%s.%s", env, componentNameString)))
+		if transformer.Cue().Err() != nil {
+			if strings.Contains(transformer.Cue().Err().Error(), fmt.Sprintf("field not found: %s", componentNameString)) {
 				return nil
 			}
-			return transformer.Err()
+			return transformer.Cue().Err()
 		}
 
 		deps := []string{}
 		for _, t := range t.Dependencies() {
-			id, err := t.Value().LookupPath(cue.ParsePath("$guku.id")).String()
+			taskValue := compiler.Wrap(t.Value())
+			id, err := taskValue.LookupPath(cue.ParsePath("$guku.id")).String()
 			if err != nil {
 				return err
 			}
 			deps = append(deps, id)
 		}
 
-		transformer, components, err := applyTransformerFeedForward(
+		components, err := applyTransformerFeedForward(
 			transformer,
 			map[string][]string{
 				"dependencies": deps,
 			},
-			t.Value(),
+			value,
 		)
 		if err != nil {
 			return err
 		}
 
 		// run flow for nested components (this will update components)
-		components, err = RunFlow(components)
-		if err != nil {
-			return err
-		}
+		// components, err = RunFlow(components)
+		// if err != nil {
+		// 	return err
+		// }
 
 		component, err := applyTransformerFeedBack(
 			transformer,
@@ -137,74 +136,73 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 			return err
 		}
 
-		return t.Fill(component)
+		if err := t.Fill(component.Cue()); err != nil {
+			return err
+		}
+
+		return nil
 	}), nil
 }
 
-func applyTransformerFeedForward(transformer cue.Value, context interface{}, component cue.Value) (cue.Value, cue.Value, error) {
-	ctx := transformer.Context()
-	bottom := ctx.CompileString("_|_")
+func applyTransformerFeedForward(transformer *compiler.Value, context interface{}, component *compiler.Value) (*compiler.Value, error) {
+	bottom, _ := compiler.Compile("", "_|_")
 
 	transformerInputTraits := transformer.LookupPath(cue.ParsePath("input.component.$guku.traits"))
 	componentTraits := component.LookupPath(cue.ParsePath("$guku.traits"))
 
-	transIter, _ := transformerInputTraits.Fields()
-	for transIter.Next() {
-		trait := cue.MakePath(transIter.Selector())
+	transFields, _ := transformerInputTraits.Fields()
+	for _, field := range transFields {
+		trait := cue.MakePath(field.Selector)
 		hasTrait := componentTraits.LookupPath(trait).Exists()
 		if !hasTrait {
 			metadata := component.LookupPath(cue.ParsePath("$guku"))
-			return transformer, bottom, fmt.Errorf("Transformer input component %s missing trait %s", metadata, transIter.Selector())
+			return bottom, fmt.Errorf("Transformer input component %s missing trait %s", metadata, field.Selector)
 		}
 	}
 
-	input := ctx.CompileString("{}")
-	input = input.FillPath(cue.ParsePath("input.component"), component)
-	input = input.FillPath(cue.ParsePath("input.context"), context)
+	input, _ := compiler.Compile("", "_")
+	input.FillPath(cue.ParsePath("input.component"), component)
+	input.FillPath(cue.ParsePath("input.context"), context)
 
-	transformer = transformer.FillPath(
+	err := transformer.FillPath(
 		cue.MakePath(),
 		input,
 	)
-	if transformer.Err() != nil {
-		return transformer, bottom, transformer.Err()
+	if err != nil {
+		return bottom, err
 	}
 
-	transformer, err := populateGeneratedFields(transformer)
+	err = populateGeneratedFields(transformer)
 	if err != nil {
-		return transformer, bottom, err
+		return bottom, err
 	}
 
 	// components don't have to be concrete
 	components := transformer.LookupPath(cue.ParsePath("feedforward"))
-	if components.Err() != nil {
-		return transformer, bottom, components.Err()
-	}
 
-	return transformer, components, nil
+	return components, nil
 }
 
-func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.Value, error) {
-	ctx := transformer.Context()
-	bottom := ctx.CompileString("_|_")
+func applyTransformerFeedBack(transformer *compiler.Value, components *compiler.Value) (*compiler.Value, error) {
+	bottom, _ := compiler.Compile("", "_|_")
 
 	err := components.Validate(cue.Concrete(true))
 	if err != nil {
 		return bottom, err
 	}
 
-	input := ctx.CompileString("{}")
-	input = input.FillPath(cue.ParsePath("feedforward.components"), components)
+	input, _ := compiler.Compile("", "_")
+	input.FillPath(cue.ParsePath("feedforward.components"), components)
 
-	transformer = transformer.FillPath(
+	err = transformer.FillPath(
 		cue.MakePath(),
 		input,
 	)
-	if transformer.Err() != nil {
-		return bottom, transformer.Err()
+	if err != nil {
+		return bottom, err
 	}
 
-	transformer = transformer.FillPath(
+	transformer.FillPath(
 		cue.ParsePath("feedback.component.$guku.children"),
 		components,
 	)
@@ -217,7 +215,7 @@ func applyTransformerFeedBack(transformer cue.Value, components cue.Value) (cue.
 }
 
 func removeMeta(value cue.Value) (cue.Value, error) {
-	result := value.Context().CompileString("{}")
+	result := value.Context().CompileString("_")
 
 	iter, err := value.Fields()
 	if err != nil {
@@ -237,12 +235,10 @@ func removeMeta(value cue.Value) (cue.Value, error) {
 	return result, nil
 }
 
-func populateGeneratedFields(v cue.Value) (cue.Value, error) {
-	bottom := v.Context().CompileString("_|_")
-
+func populateGeneratedFields(v *compiler.Value) error {
 	pathsToFill := []cue.Path{}
-	Walk(v, func(v cue.Value) bool {
-		gukuAttr := v.Attribute("guku")
+	Walk(v, func(v *compiler.Value) bool {
+		gukuAttr := v.Cue().Attribute("guku")
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
 			isGenerated, _ := gukuAttr.Flag(0, "generate")
 			if isGenerated {
@@ -256,21 +252,21 @@ func populateGeneratedFields(v cue.Value) (cue.Value, error) {
 	for _, path := range pathsToFill {
 		selectors := path.Selectors()[1:]
 		fieldPath := cue.MakePath(selectors...)
-		v = v.FillPath(fieldPath, "dummy")
-		if v.Err() != nil {
-			return bottom, v.Err()
+		err := v.FillPath(fieldPath, "dummy")
+		if err != nil {
+			return err
 		}
 	}
 
-	return v, nil
+	return nil
 }
 
-func GetConcrete(v cue.Value, path string) (cue.Value, error) {
-	bottom := v.Context().CompileString("_|_")
+func GetConcrete(v *compiler.Value, path string) (*compiler.Value, error) {
+	bottom, _ := compiler.Compile("", "_|_")
 	valuePath := cue.ParsePath(path)
 	value := v.LookupPath(valuePath)
-	if value.Err() != nil {
-		return bottom, value.Err()
+	if value.Cue().Err() != nil {
+		return bottom, value.Cue().Err()
 	}
 	err := value.Validate(cue.Concrete(true))
 	if err != nil {
@@ -279,24 +275,24 @@ func GetConcrete(v cue.Value, path string) (cue.Value, error) {
 	return value, nil
 }
 
-func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
+func Walk(v *compiler.Value, before func(*compiler.Value) bool, after func(*compiler.Value)) {
 	switch v.Kind() {
 	case cue.StructKind:
 		if before != nil && !before(v) {
 			return
 		}
-		iter, _ := v.Fields(cue.All())
+		fields, _ := v.Fields(cue.All())
 
-		for iter.Next() {
-			Walk(iter.Value(), before, after)
+		for _, field := range fields {
+			Walk(field.Value, before, after)
 		}
 	case cue.ListKind:
 		if before != nil && !before(v) {
 			return
 		}
-		iter, _ := v.List()
-		for iter.Next() {
-			Walk(iter.Value(), before, after)
+		values, _ := v.List()
+		for _, value := range values {
+			Walk(value, before, after)
 		}
 	default:
 		if before != nil {
@@ -308,7 +304,7 @@ func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
 	}
 }
 
-func RunFlow(v cue.Value) (cue.Value, error) {
+func RunFlow(v *compiler.Value) (*compiler.Value, error) {
 	cfg := &cueflow.Config{
 		FindHiddenTasks: true,
 		Root:            cue.MakePath(ComponentSelector),
@@ -316,7 +312,7 @@ func RunFlow(v cue.Value) (cue.Value, error) {
 
 	flow := cueflow.New(
 		cfg,
-		v,
+		v.Cue(),
 		taskFunc,
 	)
 
@@ -325,5 +321,5 @@ func RunFlow(v cue.Value) (cue.Value, error) {
 		return v, err
 	}
 
-	return flow.Value(), nil
+	return compiler.Wrap(flow.Value()), nil
 }
