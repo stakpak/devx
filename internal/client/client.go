@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue"
+	"devopzilla.com/guku/internal/drivers"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
@@ -32,7 +33,8 @@ func Run(environment string, configDir string) error {
 		return err
 	}
 
-	stack.Print()
+	compose := drivers.ComposeDriver{}
+	compose.ApplyAll(stack)
 
 	return nil
 }

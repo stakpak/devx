@@ -1,6 +1,8 @@
 package utils
 
 import (
+	"strings"
+
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
@@ -49,4 +51,22 @@ func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
 	if after != nil {
 		after(v)
 	}
+}
+
+func RemoveMeta(value cue.Value) (cue.Value, error) {
+	result := value.Context().CompileString("_")
+
+	iter, err := value.Fields()
+	if err != nil {
+		return result, err
+	}
+
+	for iter.Next() {
+		v := iter.Value()
+		if !strings.HasPrefix(v.Path().String(), "$") {
+			result = result.FillPath(v.Path(), v)
+		}
+	}
+
+	return result, nil
 }

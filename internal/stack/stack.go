@@ -104,6 +104,10 @@ func (s *Stack) HasConcreteResourceDrivers(id string) bool {
 	return true
 }
 
+func (s *Stack) GetContext() *cue.Context {
+	return s.components.Context()
+}
+
 func (s *Stack) GetTasks() []string {
 	return s.tasks
 }
