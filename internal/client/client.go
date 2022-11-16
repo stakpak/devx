@@ -10,10 +10,10 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string) error {
 	value := utils.LoadProject(configDir)
 
-	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath("builders")))
+	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
 	if err != nil {
 		return err
 	}
@@ -23,7 +23,7 @@ func Run(environment string, configDir string) error {
 		return fmt.Errorf("Environment %s was not found", environment)
 	}
 
-	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath("stack")))
+	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)))
 	if err != nil {
 		return err
 	}

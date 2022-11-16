@@ -8,11 +8,16 @@ import (
 )
 
 var (
-	configDir string
+	configDir    string
+	stackPath    string
+	buildersPath string
 )
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
+	doCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
+	doCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
+
 	rootCmd.AddCommand(
 		doCmd,
 		projectCmd,
