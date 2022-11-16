@@ -1,26 +1,17 @@
 package main
 
 import (
-	"guku.io/devx"
-	devxc "guku.io/devx/components"
+	"guku.io/devx/v1"
+	"guku.io/devx/v1/traits"
+	"guku.io/devx/v1/transformers/compose"
 )
 
-devx.#Application & {
+stack: v1.#Stack & {
 	components: {
-		proxy: {
-			devxc.#Service
-			image: "nginx"
-			ports: [
-				{
-					port:   8123
-					target: 80
-				},
-			]
-			env: APP_URL:
-				"http://\(app.host):\(app.ports[0].port)"
-		}
 		app: {
-			devxc.#Service
+			v1.#Component
+			traits.#Workload
+			traits.#Exposable
 			image: "app:v1"
 			ports: [
 				{
@@ -29,7 +20,6 @@ devx.#Application & {
 			]
 			env: {
 				PGDB_URL: db.url
-				MYDB_URL: mydb.url
 			}
 			volumes: [
 				{
@@ -39,14 +29,25 @@ devx.#Application & {
 			]
 		}
 		db: {
-			devxc.#PostgresDB
+			v1.#Component
+			traits.#Postgres
 			version:    "12.1"
 			persistent: true
 		}
-		mydb: {
-			devxc.#MysqlDB
-			version:    "8"
-			persistent: true
-		}
 	}
+}
+
+builders: v1.#StackBuilder & {
+	dev: flows: [
+		v1.#Flow & {
+			pipeline: [
+				compose.#AddComposeService & {},
+			]
+		},
+		v1.#Flow & {
+			pipeline: [
+				compose.#AddComposePostgres & {},
+			]
+		},
+	]
 }

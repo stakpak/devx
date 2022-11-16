@@ -5,15 +5,11 @@ go 1.18
 require cuelang.org/go v0.4.3
 
 require (
-	github.com/KromDaniel/jonson v0.0.0-20180630143114-d2f9c3c389db // indirect
-	github.com/go-logr/logr v1.2.3 // indirect
-	github.com/go-logr/stdr v1.2.2 // indirect
+	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/inconshreveable/mousetrap v1.0.1 // indirect
 	github.com/mitchellh/go-wordwrap v1.0.1 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
-	go.dagger.io/dagger v0.2.36 // indirect
-	go.opentelemetry.io/otel v1.4.1 // indirect
-	go.opentelemetry.io/otel/trace v1.4.1 // indirect
+	github.com/stretchr/testify v1.8.0 // indirect
 )
 
 require (
