@@ -21,7 +21,7 @@ _#ComposeResource: {
 	}
 }
 
-AddComposeService: v1.#Transformer & {
+#AddComposeService: v1.#Transformer & {
 	$metadata: transformer: "AddComposeService"
 
 	args: {}
@@ -66,7 +66,7 @@ AddComposeService: v1.#Transformer & {
 	}
 }
 
-AddComposePostgres: v1.#Transformer & {
+#AddComposePostgres: v1.#Transformer & {
 	$metadata: transformer: "AddComposePostgres"
 
 	args: {}
