@@ -5,11 +5,33 @@ import (
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/utils"
 )
+
+type Environments = map[string]*StackBuilder
 
 type StackBuilder struct {
 	// AdditionalComponents *cue.Value
 	Flows []*Flow
+}
+
+func NewEnvironments(value cue.Value) (Environments, error) {
+	environments := map[string]*StackBuilder{}
+
+	envIter, err := value.Fields()
+	if err != nil {
+		return environments, err
+	}
+
+	for envIter.Next() {
+		name := utils.GetLastPathFragement(envIter.Value())
+		environments[name], err = NewStackBuilder(envIter.Value())
+		if err != nil {
+			return environments, err
+		}
+	}
+
+	return environments, nil
 }
 
 func NewStackBuilder(value cue.Value) (*StackBuilder, error) {

@@ -1,3 +1,5 @@
+package v1
+
 #Trait: {
 	$metadata: traits: [string]: _ | *null
 	...
