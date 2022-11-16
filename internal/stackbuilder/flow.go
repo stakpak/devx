@@ -52,8 +52,15 @@ func (f *Flow) Match(component cue.Value) bool {
 	for matchIter.Next() {
 		fieldName := utils.GetLastPathFragement(matchIter.Value())
 		componentField := metadata.LookupPath(cue.ParsePath(fieldName))
-		if !matchIter.Value().Equals(componentField) {
-			return false
+
+		matchSubfieldsIter, _ := matchIter.Value().Fields()
+		for matchSubfieldsIter.Next() {
+			matchSubfieldName := utils.GetLastPathFragement(matchSubfieldsIter.Value())
+			componentSubfield := componentField.LookupPath(cue.ParsePath(matchSubfieldName))
+
+			if !componentSubfield.Exists() || !componentSubfield.Equals(matchSubfieldsIter.Value()) {
+				return false
+			}
 		}
 	}
 
