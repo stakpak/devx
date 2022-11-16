@@ -41,12 +41,12 @@ builders: v1.#StackBuilder & {
 	dev: flows: [
 		v1.#Flow & {
 			pipeline: [
-				compose.#AddComposeService & {},
+				compose.AddComposeService & {},
 			]
 		},
 		v1.#Flow & {
 			pipeline: [
-				compose.#AddComposePostgres & {},
+				compose.AddComposePostgres & {},
 			]
 		},
 	]
