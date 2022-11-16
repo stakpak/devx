@@ -2,13 +2,14 @@ package stackbuilder
 
 import (
 	"cuelang.org/go/cue"
+	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
 )
 
 type Flow struct {
 	match    cue.Value
 	exclude  cue.Value
-	pipeline cue.Value
+	pipeline []cue.Value
 }
 
 func NewFlow(value cue.Value) (*Flow, error) {
@@ -29,16 +30,21 @@ func NewFlow(value cue.Value) (*Flow, error) {
 	flow := Flow{
 		match:    ctx.CompileString("_"),
 		exclude:  ctx.CompileString("_"),
-		pipeline: ctx.CompileString("_"),
+		pipeline: make([]cue.Value, 0),
 	}
 	flow.match = flow.match.Fill(matchValue)
 	flow.exclude = flow.exclude.Fill(excludeValue)
-	flow.pipeline = flow.pipeline.Fill(pipelineValue)
+	pipelineIter, _ := pipelineValue.List()
+	for pipelineIter.Next() {
+		transformer := ctx.CompileString("_")
+		transformer = transformer.Fill(pipelineIter.Value())
+		flow.pipeline = append(flow.pipeline, transformer)
+	}
 
 	return &flow, nil
 }
 
-func (f *Flow) Matches(component cue.Value) bool {
+func (f *Flow) Match(component cue.Value) bool {
 	metadata := component.LookupPath(cue.ParsePath("$metadata"))
 
 	// Check matches
@@ -70,4 +76,94 @@ func (f *Flow) Matches(component cue.Value) bool {
 	}
 
 	return true
+}
+
+func (f *Flow) Run(stack *stack.Stack, componentId string) error {
+	component, err := stack.GetComponent(componentId)
+	if err != nil {
+		return err
+	}
+	dependencies, err := stack.GetDependencies(componentId)
+	if err != nil {
+		return err
+	}
+
+	context := component.Context().CompileString("_")
+	context = context.FillPath(cue.ParsePath("dependencies"), dependencies)
+
+	for _, transformer := range f.pipeline {
+		component, err = Transform(
+			transformer,
+			component,
+			context,
+		)
+		if err != nil {
+			return err
+		}
+	}
+
+	err = stack.UpdateComponent(componentId, component)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func Transform(transformer cue.Value, component cue.Value, context cue.Value) (cue.Value, error) {
+	bottom := transformer.Context().CompileString("_|_")
+
+	transformerContext := transformer.LookupPath(cue.ParsePath("context"))
+	transformerContext = transformerContext.Fill(context)
+	if transformerContext.Err() != nil {
+		return bottom, transformer.Err()
+	}
+	transformerContext = populateGeneratedFields(transformerContext)
+	if transformerContext.Err() != nil {
+		return bottom, transformer.Err()
+	}
+
+	transformer = transformer.FillPath(
+		cue.ParsePath("context"),
+		transformerContext,
+	)
+	if transformer.Err() != nil {
+		return bottom, transformer.Err()
+	}
+	transformer = transformer.FillPath(
+		cue.ParsePath("input"),
+		component,
+	)
+	if transformer.Err() != nil {
+		return bottom, transformer.Err()
+	}
+
+	return transformer.LookupPath(cue.ParsePath("output")), nil
+}
+
+func populateGeneratedFields(value cue.Value) cue.Value {
+	result := value.Context().CompileString("_")
+	result = result.Fill(value)
+
+	pathsToFill := []cue.Path{}
+	value.Walk(func(v cue.Value) bool {
+		gukuAttr := v.Attribute("guku")
+		if !v.IsConcrete() && gukuAttr.Err() == nil {
+			isGenerated, _ := gukuAttr.Flag(0, "generate")
+			if isGenerated {
+				selectors := v.Path().Selectors()
+				pathsToFill = append(pathsToFill, cue.MakePath(selectors[1:]...))
+			}
+		}
+		return true
+	}, nil)
+
+	for _, path := range pathsToFill {
+		result = result.FillPath(path, "dummy")
+		if result.Err() != nil {
+			return result
+		}
+	}
+
+	return result
 }
