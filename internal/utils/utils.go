@@ -22,3 +22,31 @@ func GetLastPathFragement(value cue.Value) string {
 	selector := value.Path().Selectors()
 	return selector[len(selector)-1].String()
 }
+
+func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {
+	switch v.Kind() {
+	case cue.StructKind:
+		if before != nil && !before(v) {
+			return
+		}
+		fieldIter, _ := v.Fields(cue.All())
+		for fieldIter.Next() {
+			Walk(fieldIter.Value(), before, after)
+		}
+	case cue.ListKind:
+		if before != nil && !before(v) {
+			return
+		}
+		valueIter, _ := v.List()
+		for valueIter.Next() {
+			Walk(valueIter.Value(), before, after)
+		}
+	default:
+		if before != nil {
+			before(v)
+		}
+	}
+	if after != nil {
+		after(v)
+	}
+}

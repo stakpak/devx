@@ -52,8 +52,7 @@ func (f *Flow) Match(component cue.Value) bool {
 	for matchIter.Next() {
 		fieldName := utils.GetLastPathFragement(matchIter.Value())
 		componentField := metadata.LookupPath(cue.ParsePath(fieldName))
-		err := matchIter.Value().Subsume(componentField)
-		if err != nil {
+		if !matchIter.Value().Equals(componentField) {
 			return false
 		}
 	}
@@ -151,7 +150,7 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 	result = result.Fill(value)
 
 	pathsToFill := []cue.Path{}
-	value.Walk(func(v cue.Value) bool {
+	utils.Walk(value, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
 			isGenerated, _ := gukuAttr.Flag(0, "generate")

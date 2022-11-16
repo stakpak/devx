@@ -32,5 +32,7 @@ func Run(environment string, configDir string) error {
 		return err
 	}
 
+	stack.Print()
+
 	return nil
 }

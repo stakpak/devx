@@ -53,6 +53,10 @@ func NewStack(value cue.Value) (*Stack, error) {
 	return stack, nil
 }
 
+func (s *Stack) Print() {
+	fmt.Println(s.components)
+}
+
 func (s *Stack) GetDependencies(id string) ([]string, error) {
 	val, ok := s.dependencies[id]
 	if !ok {
@@ -77,7 +81,7 @@ func (s *Stack) GetComponent(id string) (cue.Value, error) {
 func (s *Stack) IsConcreteComponent(id string) bool {
 	component := s.components.LookupPath(cue.ParsePath(id))
 	err := component.Validate(cue.Concrete(true))
-	return err != nil
+	return err == nil
 }
 
 func (s *Stack) HasConcreteResourceDrivers(id string) bool {
