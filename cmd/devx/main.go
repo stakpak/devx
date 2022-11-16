@@ -30,7 +30,7 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "guku",
+	Use:   "devx",
 	Short: "guku DevX cloud native self-service magic",
 }
 

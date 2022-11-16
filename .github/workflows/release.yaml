@@ -28,6 +28,6 @@ jobs:
           goversion: "1.18"
           md5sum: FALSE
           sha256sum: TRUE
-          project_path: "./cmd/guku"
-          binary_name: "guku"
+          project_path: "./cmd/devx"
+          binary_name: "devx"
           extra_files: README.md

@@ -2,7 +2,7 @@
 
 ```bash
 make build
-bin/guku -p examples project init
-bin/guku -p examples project update
-bin/guku -p examples do dev  
+bin/devx -p examples project init
+bin/devx -p examples project update
+bin/devx -p examples do dev  
 ```
