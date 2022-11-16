@@ -80,6 +80,26 @@ func (s *Stack) IsConcreteComponent(id string) bool {
 	return err != nil
 }
 
+func (s *Stack) HasConcreteResourceDrivers(id string) bool {
+	component := s.components.LookupPath(cue.ParsePath(id))
+	resources := component.LookupPath(cue.ParsePath("$resource"))
+
+	if resources.Exists() {
+		resourceIter, _ := resources.Fields()
+		for resourceIter.Next() {
+			driver := resourceIter.Value().LookupPath(cue.ParsePath("$metadata.labels.driver"))
+			if !driver.Exists() {
+				return false
+			}
+			err := driver.Validate(cue.Concrete(true))
+			if err != nil {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func (s *Stack) GetTasks() []string {
 	return s.tasks
 }

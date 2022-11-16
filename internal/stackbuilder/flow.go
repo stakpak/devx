@@ -83,6 +83,11 @@ func (f *Flow) Run(stack *stack.Stack, componentId string) error {
 	if err != nil {
 		return err
 	}
+
+	if !f.Match(component) {
+		return nil
+	}
+
 	dependencies, err := stack.GetDependencies(componentId)
 	if err != nil {
 		return err

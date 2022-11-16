@@ -1,6 +1,11 @@
 package stackbuilder
 
-import "cuelang.org/go/cue"
+import (
+	"fmt"
+
+	"cuelang.org/go/cue"
+	"devopzilla.com/guku/internal/stack"
+)
 
 type StackBuilder struct {
 	// AdditionalComponents *cue.Value
@@ -29,12 +34,24 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 	return &stackBuilder, nil
 }
 
-func (sb *StackBuilder) TransformComponent(component cue.Value) (cue.Value, error) {
-	temp := component
-
-	// for flow := range sb.Flows {
-
-	// }
-
-	return temp, nil
+func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
+	orderedTasks := stack.GetTasks()
+	for _, componentId := range orderedTasks {
+		for _, flow := range sb.Flows {
+			err := flow.Run(stack, componentId)
+			if err != nil {
+				return err
+			}
+			if !stack.HasConcreteResourceDrivers(componentId) {
+				return fmt.Errorf(
+					"Component %s resources do not have concrete drivers",
+					componentId,
+				)
+			}
+		}
+		if !stack.IsConcreteComponent(componentId) {
+			return fmt.Errorf("Component %s is not concrete after transformation", componentId)
+		}
+	}
+	return nil
 }
