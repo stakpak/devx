@@ -33,7 +33,9 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 		return err
 	}
 
-	compose := drivers.ComposeDriver{}
+	compose := drivers.ComposeDriver{
+		Path: "compose",
+	}
 	compose.ApplyAll(stack)
 
 	return nil
