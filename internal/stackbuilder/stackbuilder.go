@@ -11,8 +11,8 @@ import (
 type Environments = map[string]*StackBuilder
 
 type StackBuilder struct {
-	// AdditionalComponents *cue.Value
-	Flows []*Flow
+	AdditionalComponents *cue.Value
+	Flows                []*Flow
 }
 
 func NewEnvironments(value cue.Value) (Environments, error) {
@@ -40,9 +40,19 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 		return nil, flows.Err()
 	}
 
+	var additionalComponents *cue.Value
+	additionalComponentsValue := value.LookupPath(cue.ParsePath("additionalComponents"))
+	if additionalComponentsValue.Err() != nil {
+		return nil, additionalComponentsValue.Err()
+	}
+	if additionalComponentsValue.Exists() {
+		newValue := value.Context().CompileString("{}").Fill(additionalComponentsValue)
+		additionalComponents = &newValue
+	}
+
 	stackBuilder := StackBuilder{
-		// AdditionalComponents: nil,
-		Flows: make([]*Flow, 0),
+		AdditionalComponents: additionalComponents,
+		Flows:                make([]*Flow, 0),
 	}
 	flowIter, _ := flows.List()
 	for flowIter.Next() {
@@ -57,6 +67,7 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 }
 
 func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
+	stack.AddComponents(*sb.AdditionalComponents)
 	orderedTasks := stack.GetTasks()
 	for _, componentId := range orderedTasks {
 		for _, flow := range sb.Flows {

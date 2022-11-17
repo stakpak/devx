@@ -38,16 +38,26 @@ stack: v1.#Stack & {
 }
 
 builders: v1.#StackBuilder & {
-	dev: flows: [
-		v1.#Flow & {
-			pipeline: [
-				compose.#AddComposeService & {},
-			]
-		},
-		v1.#Flow & {
-			pipeline: [
-				compose.#AddComposePostgres & {},
-			]
-		},
-	]
+	dev: {
+		additionalComponents: {
+			observedb: {
+				v1.#Component
+				traits.#Postgres
+				version:    "12.1"
+				persistent: true
+			}
+		}
+		flows: [
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposePostgres & {},
+				]
+			},
+		]
+	}
 }
