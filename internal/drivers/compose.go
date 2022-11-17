@@ -46,8 +46,8 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 	composeFilePath := path.Join(d.Path, "docker-compose.yml")
 	if _, err := os.Stat(d.Path); os.IsNotExist(err) {
 		os.MkdirAll(d.Path, 0700)
-		os.WriteFile(composeFilePath, data, 0700)
 	}
+	os.WriteFile(composeFilePath, data, 0700)
 
 	return nil
 }
