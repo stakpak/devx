@@ -5,6 +5,7 @@ import (
 	"guku.io/devx/v1"
 )
 
+// a component that runs a container
 #Workload: v1.#Trait & {
 	$metadata: traits: Workload: null
 
@@ -20,6 +21,7 @@ import (
 	}]
 }
 
+// a component that can be horizontally scaled
 #Replicable: v1.#Trait & {
 	$metadata: traits: Replicable: null
 
@@ -29,6 +31,7 @@ import (
 	}
 }
 
+// a component that has endpoints that can be exposed
 #Exposable: v1.#Trait & {
 	$metadata: traits: Exposable: null
 
@@ -39,6 +42,7 @@ import (
 	host: string
 }
 
+// a postgres database
 #Postgres: v1.#Trait & {
 	$metadata: traits: Postgres: null
 

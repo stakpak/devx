@@ -4,9 +4,18 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
 )
+
+func LoadInstances(configDir string) []*build.Instance {
+	buildConfig := &cueload.Config{
+		Dir:     configDir,
+		Overlay: map[string]cueload.Source{},
+	}
+	return cueload.Instances([]string{}, buildConfig)
+}
 
 func LoadProject(configDir string) cue.Value {
 	buildConfig := &cueload.Config{
@@ -23,6 +32,21 @@ func LoadProject(configDir string) cue.Value {
 func GetLastPathFragement(value cue.Value) string {
 	selector := value.Path().Selectors()
 	return selector[len(selector)-1].String()
+}
+
+func GetComments(value cue.Value) string {
+	comments := value.Doc()
+	result := ""
+	for _, comment := range comments {
+		result += comment.Text()
+	}
+	return strings.ReplaceAll(result, "\n", " ")
+}
+
+func HasComments(value cue.Value) bool {
+	comments := value.Doc()
+
+	return len(comments) > 0
 }
 
 func Walk(v cue.Value, before func(cue.Value) bool, after func(cue.Value)) {

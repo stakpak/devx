@@ -6,6 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"devopzilla.com/guku/internal/types"
 	"devopzilla.com/guku/pkg/cuemods"
 )
 
@@ -35,5 +36,29 @@ var updateCmd = &cobra.Command{
 		}
 
 		return cuemods.InstallCore(cueModPath)
+	},
+}
+
+var validateCmd = &cobra.Command{
+	Use:     "validate",
+	Aliases: []string{"v"},
+	Short:   "Validate configurations",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := types.Validate(configDir); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var discoverCmd = &cobra.Command{
+	Use:     "discover",
+	Aliases: []string{"d"},
+	Short:   "Discover traits",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := types.Discover(configDir, showTraitDef); err != nil {
+			return err
+		}
+		return nil
 	},
 }
