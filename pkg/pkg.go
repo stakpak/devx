@@ -1,4 +1,4 @@
-package cuemods
+package pkg
 
 import (
 	"context"
