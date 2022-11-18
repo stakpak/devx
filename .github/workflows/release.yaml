@@ -20,6 +20,9 @@ jobs:
             goos: windows
     steps:
       - uses: actions/checkout@v3
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
       - uses: wangyoucao577/go-release-action@v1.32
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
@@ -31,3 +34,4 @@ jobs:
           project_path: "./cmd/devx"
           binary_name: "devx"
           extra_files: README.md
+          ldflags: -X 'main.version=${{ steps.tag.outputs.tag }}' -X 'main.commit=${{ GITHUB_SHA }}'

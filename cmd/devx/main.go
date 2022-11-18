@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 
@@ -14,6 +15,14 @@ var (
 	showTraitDef bool
 )
 
+var version = "DEV"
+var commit = "X"
+
+type Version struct {
+	Version string `json:"version"`
+	Commit  string `json:"commit"`
+}
+
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
 	doCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
@@ -23,6 +32,7 @@ func init() {
 	rootCmd.AddCommand(
 		doCmd,
 		projectCmd,
+		versionCmd,
 	)
 
 	projectCmd.AddCommand(
@@ -37,6 +47,22 @@ func init() {
 var rootCmd = &cobra.Command{
 	Use:   "devx",
 	Short: "guku DevX cloud native self-service magic",
+}
+
+var versionCmd = &cobra.Command{
+	Use:   "version",
+	Short: "Print the version number of guku DevX",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		encoded, err := json.Marshal(Version{
+			Version: version,
+			Commit:  commit,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(encoded))
+		return nil
+	},
 }
 
 func main() {
