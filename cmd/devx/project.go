@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"devopzilla.com/guku/internal/types"
+	"devopzilla.com/guku/internal/project"
 	"devopzilla.com/guku/pkg/cuemods"
 )
 
@@ -44,7 +44,7 @@ var validateCmd = &cobra.Command{
 	Aliases: []string{"v"},
 	Short:   "Validate configurations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := types.Validate(configDir); err != nil {
+		if err := project.Validate(configDir); err != nil {
 			return err
 		}
 		return nil
@@ -56,7 +56,18 @@ var discoverCmd = &cobra.Command{
 	Aliases: []string{"d"},
 	Short:   "Discover traits",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := types.Discover(configDir, showTraitDef); err != nil {
+		if err := project.Discover(configDir, showTraitDef); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var genCmd = &cobra.Command{
+	Use:   "gen",
+	Short: "Generate bare config file",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.Generate(configDir); err != nil {
 			return err
 		}
 		return nil

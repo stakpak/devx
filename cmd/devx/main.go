@@ -30,6 +30,7 @@ func init() {
 		updateCmd,
 		validateCmd,
 		discoverCmd,
+		genCmd,
 	)
 }
 
