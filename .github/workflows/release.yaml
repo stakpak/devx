@@ -34,4 +34,4 @@ jobs:
           project_path: "./cmd/devx"
           binary_name: "devx"
           extra_files: README.md
-          ldflags: -X 'main.version=${{ steps.tag.outputs.tag }}' -X 'main.commit=${GITHUB_SHA}'
+          ldflags: -X main.version=${{ steps.tag.outputs.tag }} -X main.commit=$GITHUB_SHA
