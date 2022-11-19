@@ -1,7 +1,6 @@
 package compose
 
 import (
-	"strings"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 )
@@ -10,7 +9,7 @@ _#ComposeResource: {
 	$metadata: labels: driver: "compose"
 
 	version: string | *"3"
-	volumes: [string]: null
+	volumes: [string]: {...} | *null
 	services: [string]: {
 		image: string
 		depends_on?: [...string]
@@ -18,6 +17,23 @@ _#ComposeResource: {
 		environment?: [string]: string
 		command?: string
 		volumes?: [...string]
+	}
+}
+
+#ComposeExposeService: v1.#Transformer & {
+	$metadata: transformer: "ComposeExposeService"
+
+	args: {}
+	context: {
+		dependencies: [...string]
+	}
+	input: {
+		v1.#Component
+		traits.#Exposable
+		...
+	}
+	output: {
+		endpoints: [string]: host: "\(input.$metadata.id)"
 	}
 }
 
@@ -31,79 +47,73 @@ _#ComposeResource: {
 	input: {
 		v1.#Component
 		traits.#Workload
-		traits.#Exposable
 		...
 	}
 	output: {
-		host: "\(input.$metadata.id)"
 		$resources: compose: _#ComposeResource & {
 			services: "\(input.$metadata.id)": {
-				image: input.image
-				ports: [
-					for p in input.ports {
-						"\(p.port):\(p.target)"
-					},
-				]
-				environment: input.env
+				image: input.containers.default.image
+				environment: input.containers.default.env
 				depends_on:  context.dependencies
 				volumes: [
-					for v in input.volumes {
-						if v.readOnly {
-							"\(v.source):\(v.target):ro"
-						}
-						if !v.readOnly {
-							"\(v.source):\(v.target)"
-						}
+					for id, mount in output.containers.default.mounts {
+						"\(input.$metadata.id)-\(mount.volume.$metadata.id):\(mount.path)"
 					},
 				]
 			}
-			for v in input.volumes {
-				if !strings.HasPrefix(v.source, ".") && !strings.HasPrefix(v.source, "/") {
-					volumes: "\(v.source)": null
+		}
+	}
+}
+
+#AddComposeVolume: v1.#Transformer & {
+	$metadata: transformer: "AddComposeVolume"
+
+	args: {}
+	context: {
+		dependencies: [...string]
+	}
+	input: {
+		v1.#Component
+		traits.#Volume
+		...
+	}
+	output: {
+		$resources: compose: _#ComposeResource & {
+			volumes: {
+				for id, volume in input.volumes {
+					"\(input.$metadata.id)-\(id)": {
+
+					}
 				}
 			}
 		}
 	}
 }
 
-#AddComposePostgres: v1.#Transformer & {
-	$metadata: transformer: "AddComposePostgres"
+#ForwardPort: v1.#Transformer & {
+	$metadata: transformer: "ForwardPort"
 
-	args: {}
+	args: {
+		endpoints: [string]: {
+			port: string
+		}
+	}
 	context: {
 		dependencies: [...string]
-		_username: string @guku(generate)
-		_password: string @guku(generate,secret)
 	}
 	input: {
 		v1.#Component
-		traits.#Postgres
+		traits.#Exposable
 		...
 	}
 	output: {
-		host:     "\(input.$metadata.id)"
-		username: context._username
-		password: context._password
 		$resources: compose: _#ComposeResource & {
 			services: "\(input.$metadata.id)": {
-				image: "postgres:\(input.version)-alpine"
 				ports: [
-					"\(input.port)",
+					for id, endpoint in args.endpoints {
+						"\(endpoint.port):\(input.endpoints[id].port)"
+					}
 				]
-				if input.persistent {
-					volumes: [
-						"pg-data:/var/lib/postgresql/data",
-					]
-				}
-				environment: {
-					POSTGRES_USER:     context._username
-					POSTGRES_PASSWORD: context._password
-					POSTGRES_DB:       input.database
-				}
-				depends_on: context.dependencies
-			}
-			if input.persistent {
-				volumes: "pg-data": null
 			}
 		}
 	}

@@ -1,23 +1,24 @@
 package traits
 
 import (
-	"list"
+	"struct"
+	
 	"guku.io/devx/v1"
 )
 
 #Workload: v1.#Trait & {
 	$metadata: traits: Workload: null
 
-	image: string
-	command: [...string]
-	args: [...string]
-	env: [string]:    string
-	mounts: [string]: string
-	volumes: [...{
-		source:   string
-		target:   string
-		readOnly: bool | *true
-	}]
+	containers: [string]: {
+		image: string
+		command: [...string]
+		args: [...string]
+		env: [string]: string
+		mounts: [string]: {
+			volume: {...}
+			path: string
+		}
+	}
 }
 
 #Replicable: v1.#Trait & {
@@ -32,23 +33,31 @@ import (
 #Exposable: v1.#Trait & {
 	$metadata: traits: Exposable: null
 
-	ports: [...{
-		port:   uint
-		target: uint | *port
-	}] & list.MinItems(0)
-	host: string
+	endpoints: [string]: {
+		host: string
+		port: string
+	} & struct.MinFields(0)
 }
 
-#Postgres: v1.#Trait & {
-	$metadata: traits: Postgres: null
+#Volume: v1.#Trait & {
+	v1.#Trait
+	$metadata: traits: Volume: null
 
-	version:    string
-	persistent: bool | *true
-	port:       uint | *5432
-	database:   string | *"default"
+	volumes: [Id=string]: {
+		$metadata: id: Id
+		...
+	}
+}
 
-	host:     string
-	username: string
-	password: string
-	url:      "postgresql://\(username):\(password)@\(host):\(port)/\(database)"
+#Database: v1.#Trait & {
+	$metadata: traits: Database: null
+
+	database: {
+		type:       string
+		version:    string | *"latest"
+		persistent: bool | *true
+		database:   string | *"default"
+		username?:  string
+		password?:  string
+	}
 }

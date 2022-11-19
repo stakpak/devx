@@ -4,6 +4,7 @@ import (
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 	"guku.io/devx/v1/transformers/compose"
+	"guku.io/devx/v1/transformers/database"
 )
 
 stack: v1.#Stack & {
@@ -12,42 +13,43 @@ stack: v1.#Stack & {
 			v1.#Component
 			traits.#Workload
 			traits.#Exposable
-			image: "app:v1"
-			ports: [
-				{
-					port: 8080
-				},
-			]
-			env: {
-				PGDB_URL: db.url
+
+			$metadata: labels: application: "backend"
+
+			endpoints: default: port: "8080"
+			containers: default: {
+				image: "app:v1"
+				env: {
+					POSTGRES_HOST:     db.endpoints.default.host
+					POSTGRES_PORT:     db.endpoints.default.port
+					POSTGRES_DATABASE: db.database.database
+				}
 			}
-			volumes: [
-				{
-					source: "bla"
-					target: "/tmp/bla"
-				},
-			]
 		}
 		db: {
 			v1.#Component
-			traits.#Postgres
-			version:    "12.1"
-			persistent: true
+			traits.#Database
+			database: {
+				type:       "postgres"
+				version:    "12.1"
+				persistent: true
+			}
 		}
 	}
 }
 
 builders: v1.#StackBuilder & {
 	dev: flows: [
-		v1.#Flow & {
-			pipeline: [
-				compose.#AddComposeService & {},
-			]
-		},
-		v1.#Flow & {
-			pipeline: [
-				compose.#AddComposePostgres & {},
-			]
+		{pipeline: [database.#AddDatabaseWorkload]},
+		{pipeline: [database.#AddDatabaseVolume]},
+		{pipeline: [compose.#AddComposeVolume]},
+		{pipeline: [compose.#AddComposeService]},
+		{pipeline: [compose.#ComposeExposeService]},
+		{
+			match: labels: application: "backend"
+			pipeline: [compose.#ForwardPort & {
+				args: endpoints: default: port: "8080"
+			}]
 		},
 	]
 }
