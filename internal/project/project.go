@@ -12,10 +12,12 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"devopzilla.com/guku/internal/utils"
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
+	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
@@ -172,41 +174,9 @@ func Update(configDir string) error {
 			return err
 		}
 
-		mfs := memfs.New()
-		storer := memory.NewStorage()
-
-		// try without auth
-		repo, err := git.Clone(storer, mfs, &git.CloneOptions{
-			URL:   repoURL,
-			Depth: 1,
-		})
+		repo, mfs, err := getRepo(repoURL)
 		if err != nil {
-			if err.Error() != "authentication required" {
-				return err
-			}
-
-			gitUsername := os.Getenv("GIT_USERNAME")
-			gitPassword := os.Getenv("GIT_PASSWORD")
-
-			if gitPassword == "" {
-				return fmt.Errorf("GIT_PASSWORD and GIT_USERNAME are required to access private repos")
-			}
-
-			auth := http.BasicAuth{
-				Username: gitUsername,
-				Password: gitPassword,
-			}
-
-			mfs = memfs.New()
-			storer = memory.NewStorage()
-			repo, err = git.Clone(storer, mfs, &git.CloneOptions{
-				URL:   repoURL,
-				Auth:  &auth,
-				Depth: 1,
-			})
-			if err != nil {
-				return err
-			}
+			return err
 		}
 
 		hash, err := repo.ResolveRevision(plumbing.Revision(repoRevision))
@@ -231,7 +201,7 @@ func Update(configDir string) error {
 			return err
 		}
 
-		err = utils.FsWalk(mfs, repoPath, func(file string, content []byte) error {
+		err = utils.FsWalk(*mfs, repoPath, func(file string, content []byte) error {
 			writePath := path.Join(configDir, "cue.mod", file)
 
 			if err := os.MkdirAll(filepath.Dir(writePath), 0755); err != nil {
@@ -264,6 +234,75 @@ func parsePackage(pkg string) (string, string, string, error) {
 	}
 
 	return url, revision, path, nil
+}
+
+func getRepo(repoURL string) (*git.Repository, *billy.Filesystem, error) {
+	// try without auth
+	mfs := memfs.New()
+	storer := memory.NewStorage()
+	repo, err := git.Clone(storer, mfs, &git.CloneOptions{
+		URL:   repoURL,
+		Depth: 1,
+	})
+	if err == nil {
+		return repo, &mfs, nil
+	}
+	if err.Error() != "authentication required" {
+		return nil, nil, err
+	}
+
+	// fetch credentials
+	gitUsername := os.Getenv("GIT_USERNAME")
+	gitPassword := os.Getenv("GIT_PASSWORD")
+	gitPrivateKeyFile := os.Getenv("GIT_PRIVATE_KEY_FILE")
+	gitPrivateKeyFilePassword := os.Getenv("GIT_PRIVATE_KEY_FILE_PASSWORD")
+
+	if gitPrivateKeyFile == "" && gitPassword == "" {
+		return nil, nil, fmt.Errorf(`To access private repos please provide
+GIT_USERNAME & GIT_PASSWORD
+or
+GIT_PRIVATE_KEY_FILE & GIT_PRIVATE_KEY_FILE_PASSWORD`)
+	}
+
+	if gitPassword != "" {
+		auth := http.BasicAuth{
+			Username: gitUsername,
+			Password: gitPassword,
+		}
+
+		mfs = memfs.New()
+		storer = memory.NewStorage()
+		repo, err = git.Clone(storer, mfs, &git.CloneOptions{
+			URL:   repoURL,
+			Auth:  &auth,
+			Depth: 1,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return repo, &mfs, nil
+	}
+
+	if gitPrivateKeyFile != "" {
+		publicKeys, err := ssh.NewPublicKeysFromFile("git", gitPrivateKeyFile, gitPrivateKeyFilePassword)
+		if err != nil {
+			return nil, nil, fmt.Errorf("Failed to use git private key %s: %s", gitPrivateKeyFile, err)
+		}
+
+		mfs = memfs.New()
+		storer = memory.NewStorage()
+		repo, err = git.Clone(storer, mfs, &git.CloneOptions{
+			URL:   repoURL,
+			Auth:  publicKeys,
+			Depth: 1,
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return repo, &mfs, nil
+	}
+
+	return nil, nil, fmt.Errorf("Could not fetch repo")
 }
 
 func Init(ctx context.Context, parentDir, module string) error {
