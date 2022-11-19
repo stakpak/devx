@@ -1,12 +1,16 @@
 package utils
 
 import (
+	"bufio"
+	"io/ioutil"
+	"path"
 	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
+	"github.com/go-git/go-billy/v5"
 )
 
 func LoadInstances(configDir string) []*build.Instance {
@@ -93,4 +97,40 @@ func RemoveMeta(value cue.Value) (cue.Value, error) {
 	}
 
 	return result, nil
+}
+
+func FsWalk(fs billy.Filesystem, filePath string, process func(p string, content []byte) error) error {
+	file, err := fs.Lstat(filePath)
+	if err != nil {
+		return err
+	}
+
+	if file.IsDir() {
+		files, err := fs.ReadDir(filePath)
+		if err != nil {
+			return err
+		}
+
+		for _, f := range files {
+			childPath := path.Join(filePath, f.Name())
+			err := FsWalk(fs, childPath, process)
+			if err != nil {
+				return err
+			}
+		}
+	} else {
+		content, err := fs.Open(filePath)
+		if err != nil {
+			return err
+		}
+
+		data, err := ioutil.ReadAll(bufio.NewReader(content))
+		if err != nil {
+			return err
+		}
+
+		return process(filePath, data)
+	}
+
+	return nil
 }
