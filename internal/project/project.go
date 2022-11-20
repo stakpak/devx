@@ -21,13 +21,39 @@ import (
 	"github.com/go-git/go-git/v5/storage/memory"
 )
 
-func Validate(configDir string) error {
+func Validate(configDir string, stackPath string) error {
 	value := utils.LoadProject(configDir)
 	err := value.Validate()
-	if err == nil {
-		fmt.Println("Looks good 👀👌")
+	if err != nil {
+		return err
 	}
-	return err
+
+	stack := value.LookupPath(cue.ParsePath(stackPath))
+	if stack.Err() != nil {
+		return stack.Err()
+	}
+
+	isValid := true
+	err = errors.New("Invalid Components")
+	stack.Walk(func(v cue.Value) bool {
+		gukuAttr := v.Attribute("guku")
+
+		isRequired, _ := gukuAttr.Flag(0, "required")
+		validateErr := v.Validate(cue.Concrete(true))
+
+		if isRequired && validateErr != nil {
+			isValid = false
+			err = fmt.Errorf("%w\n%s is a required field", err, v.Path())
+		}
+		return true
+	}, nil)
+
+	if !isValid {
+		return err
+	}
+
+	fmt.Println("Looks good 👀👌")
+	return nil
 }
 
 func Discover(configDir string, showTraitDef bool) error {
