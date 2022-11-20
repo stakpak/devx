@@ -134,3 +134,14 @@ func FsWalk(fs billy.Filesystem, filePath string, process func(p string, content
 
 	return nil
 }
+
+func IsReference(value cue.Value) bool {
+	_, vs := value.Expr()
+	for _, v := range vs {
+		op, _ := v.Expr()
+		if op.String() == "." {
+			return true
+		}
+	}
+	return false
+}

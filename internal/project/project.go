@@ -35,13 +35,11 @@ func Validate(configDir string, stackPath string) error {
 
 	isValid := true
 	err = errors.New("Invalid Components")
-	stack.Walk(func(v cue.Value) bool {
+	utils.Walk(stack, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 
 		isRequired, _ := gukuAttr.Flag(0, "required")
-		validateErr := v.Validate(cue.Concrete(true))
-
-		if isRequired && validateErr != nil {
+		if isRequired && !v.IsConcrete() && !utils.IsReference(v) {
 			isValid = false
 			err = fmt.Errorf("%w\n%s is a required field", err, v.Path())
 		}
