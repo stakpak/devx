@@ -25,16 +25,27 @@ devx project discover -s # to show schemas
 
 devx can pull CUE code directly from git repositories.
 
+### Create a package
+
+```bash
+pkg
+└── domain.com
+    └── package1
+        ├── cue.mod
+        |   └── module.cue # module: "domain.com/package1"
+        └── file.cue
+```
+
 ### Add the package to `module.cue`
 ```cue
 module: ""
 
 packages: [
-	"github.com/devopzilla/guku-devx@main/pkg/guku.io",
+	"github.com/<org name>/<repo name>@<revision>/pkg/domain.com",
 ]		
 ```
 
-### For private packages
+### For private packages (optional)
 ```bash
 export GIT_USERNAME="username"
 export GIT_PASSWORD="password"
