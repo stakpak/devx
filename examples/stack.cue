@@ -11,21 +11,25 @@ stack: v1.#Stack & {
 			v1.#Component
 			traits.#Workload
 			traits.#Exposable
-			image: "app:v1"
-			ports: [
-				{
-					port: 8080
-				},
-			]
-			env: {
-				PGDB_URL: db.url
+			containers: default: {
+				image: "app:v1"
+				env: {
+					PGDB_URL: db.url
+				}
+				volumes: [
+					{
+						source: "bla"
+						target: "/tmp/bla"
+					},
+				]
 			}
-			volumes: [
-				{
-					source: "bla"
-					target: "/tmp/bla"
-				},
-			]
+			endpoints: default: {
+				ports: [
+					{
+						port: 8080
+					},
+				]
+			}
 		}
 		db: {
 			v1.#Component
@@ -35,4 +39,3 @@ stack: v1.#Stack & {
 		}
 	}
 }
-	
