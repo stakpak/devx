@@ -25,7 +25,8 @@ devx project discover -s # to show schemas
 
 devx can pull CUE code directly from git repositories.
 
-### Create a package
+### Create a new packages
+Create a new repository to store your packages, you can host multiple packages in the same repository.
 
 ```bash
 pkg
