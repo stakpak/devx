@@ -9,7 +9,7 @@ import (
 #Workload: v1.#Trait & {
 	$metadata: traits: Workload: null
 
-	image: string
+	image: string @guku(required)
 	command: [...string]
 	args: [...string]
 	env: [string]:    string
@@ -46,7 +46,7 @@ import (
 #Postgres: v1.#Trait & {
 	$metadata: traits: Postgres: null
 
-	version:    string
+	version:    string @guku(required)
 	persistent: bool | *true
 	port:       uint | *5432
 	database:   string | *"default"
