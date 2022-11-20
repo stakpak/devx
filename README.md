@@ -1,5 +1,7 @@
 # guku DevX
 
+![alt text](https://devx.guku.io/assets/images/image02.png)
+
 ## Quick start
 ```bash
 devx project init
