@@ -1,6 +1,11 @@
 # guku DevX
 
+[![asciicast](https://asciinema.org/a/cIhBiPlYmIok6H5nsJzmGCoDy.svg)](https://asciinema.org/a/cIhBiPlYmIok6H5nsJzmGCoDy)
+
+## Developer self-service with a single config file for all envrionments, for all vendors!
+
 ![alt text](https://devx.guku.io/assets/images/image02.png)
+
 
 ## Quick start
 ```bash
