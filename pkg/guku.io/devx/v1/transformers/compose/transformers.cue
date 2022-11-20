@@ -35,19 +35,19 @@ _#ComposeResource: {
 		...
 	}
 	output: {
-		host: "\(input.$metadata.id)"
+		endpoints: default: host: "\(input.$metadata.id)"
 		$resources: compose: _#ComposeResource & {
 			services: "\(input.$metadata.id)": {
-				image: input.image
+				image: input.containers.default.image
 				ports: [
-					for p in input.ports {
+					for p in input.endpoints.default.ports {
 						"\(p.port):\(p.target)"
 					},
 				]
-				environment: input.env
+				environment: input.containers.default.env
 				depends_on:  context.dependencies
 				volumes: [
-					for v in input.volumes {
+					for v in input.containers.default.volumes {
 						if v.readOnly {
 							"\(v.source):\(v.target):ro"
 						}
@@ -57,7 +57,7 @@ _#ComposeResource: {
 					},
 				]
 			}
-			for v in input.volumes {
+			for v in input.containers.default.volumes {
 				if !strings.HasPrefix(v.source, ".") && !strings.HasPrefix(v.source, "/") {
 					volumes: "\(v.source)": null
 				}
