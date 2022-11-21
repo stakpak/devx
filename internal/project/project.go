@@ -157,6 +157,7 @@ builders: v1.#StackBuilder & {
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
+					compose.#ExposeComposeService & {},
 				]
 			},
 			v1.#Flow & {

@@ -31,19 +31,13 @@ _#ComposeResource: {
 	input: {
 		v1.#Component
 		traits.#Workload
-		traits.#Exposable
 		...
 	}
 	output: {
 		endpoints: default: host: "\(input.$metadata.id)"
 		$resources: compose: _#ComposeResource & {
 			services: "\(input.$metadata.id)": {
-				image: input.containers.default.image
-				ports: [
-					for p in input.endpoints.default.ports {
-						"\(p.port):\(p.target)"
-					},
-				]
+				image:       input.containers.default.image
 				environment: input.containers.default.env
 				depends_on:  context.dependencies
 				volumes: [
@@ -61,6 +55,32 @@ _#ComposeResource: {
 				if !strings.HasPrefix(v.source, ".") && !strings.HasPrefix(v.source, "/") {
 					volumes: "\(v.source)": null
 				}
+			}
+		}
+	}
+}
+
+#ExposeComposeService: v1.#Transformer & {
+	$metadata: transformer: "ExposeComposeService"
+
+	args: {}
+	context: {
+		dependencies: [...string]
+	}
+	input: {
+		v1.#Component
+		traits.#Exposable
+		...
+	}
+	output: {
+		endpoints: default: host: "\(input.$metadata.id)"
+		$resources: compose: _#ComposeResource & {
+			services: "\(input.$metadata.id)": {
+				ports: [
+					for p in input.endpoints.default.ports {
+						"\(p.port):\(p.target)"
+					},
+				]
 			}
 		}
 	}
