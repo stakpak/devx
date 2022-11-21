@@ -12,7 +12,9 @@
 ➜ devx project init
 ➜ devx project update
 ➜ devx project gen
-➜ devx do dev  
+➜ devx do dev
+🏭 Transforming stack for the "dev" environment...
+[compose] applied resources to "compose/docker-compose.yml"
 ```
 
 ## Usage
