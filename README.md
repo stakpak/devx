@@ -24,8 +24,18 @@ devx project validate
 
 ### Platform capability discovery
 ```bash
-devx project discover
-devx project discover -s # to show schemas
+devx project discover --transformers
+➜  examples git:(main) go run ../cmd/devx project discover -t     
+[🏷️  traits] "guku.io/devx/v1/traits"
+traits.#Workload        a component that runs a container 
+traits.#Replicable      a component that can be horizontally scaled 
+traits.#Exposable       a component that has endpoints that can be exposed 
+traits.#Postgres        a postgres database 
+
+[🏭 transformers] "guku.io/devx/v1/transformers/compose"
+compose.#AddComposeService      add a compose service  (requires trait:Workload)
+compose.#ExposeComposeService   expose a compose service ports  (requires trait:Exposable)
+compose.#AddComposePostgres     add a compose service for a postgres database  (requires trait:Postgres)
 ```
 
 ## Package management
