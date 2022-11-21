@@ -17,9 +17,86 @@
 
 ## Usage
 
+### Create a stack [By Developers]
+A stack is created by the developer to define infrastructure required to run an app.
+```cue
+package main
+
+import (
+	"guku.io/devx/v1"
+	"guku.io/devx/v1/traits"
+)
+
+stack: v1.#Stack & {
+	components: {
+		app: {
+			v1.#Component
+			traits.#Workload
+			traits.#Exposable
+			containers: default: {
+				image: "app:v1"
+				env: {
+					PGDB_URL: db.url
+				}
+				volumes: [
+					{
+						source: "bla"
+						target: "/tmp/bla"
+					},
+				]
+			}
+			endpoints: default: {
+				ports: [
+					{
+						port: 8080
+					},
+				]
+			}
+		}
+		db: {
+			v1.#Component
+			traits.#Postgres
+			version:    "12.1"
+			persistent: true
+		}
+	}
+}
+```
+
+### Create your own stack builders or use community packages [By Platform Engineers]
+```cue
+package main
+
+import (
+	"guku.io/devx/v1"
+	"guku.io/devx/v1/transformers/compose"
+)
+
+builders: v1.#StackBuilder & {
+    prod: {}
+    stg1: {}
+	dev: {
+		flows: [
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeService & {},
+					compose.#ExposeComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposePostgres & {},
+				]
+			},
+		]
+	}
+}
+```
+
 ### Validation
 ```bash
 ➜ devx project validate
+Looks good 👀👌
 ```
 
 ### Platform capability discovery
