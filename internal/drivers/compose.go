@@ -1,6 +1,7 @@
 package drivers
 
 import (
+	"fmt"
 	"os"
 	"path"
 
@@ -22,6 +23,7 @@ func (d *ComposeDriver) match(resource cue.Value) bool {
 func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 
 	composeFile := stack.GetContext().CompileString("_")
+	foundResources := false
 
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
@@ -29,6 +31,7 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 		resourceIter, _ := component.LookupPath(cue.ParsePath("$resources")).Fields()
 		for resourceIter.Next() {
 			if d.match(resourceIter.Value()) {
+				foundResources = true
 				composeFile = composeFile.Fill(resourceIter.Value())
 			}
 		}
@@ -48,6 +51,10 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 		os.MkdirAll(d.Path, 0700)
 	}
 	os.WriteFile(composeFilePath, data, 0700)
+
+	if foundResources {
+		fmt.Printf("[compose] applied resources to \"%s\"\n", composeFilePath)
+	}
 
 	return nil
 }

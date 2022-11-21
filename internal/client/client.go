@@ -11,6 +11,8 @@ import (
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string) error {
+	fmt.Printf("🏭 Transforming stack for the \"%s\" environment...\n", environment)
+
 	value := utils.LoadProject(configDir)
 
 	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
