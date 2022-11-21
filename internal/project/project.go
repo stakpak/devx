@@ -54,7 +54,7 @@ func Validate(configDir string, stackPath string) error {
 	return nil
 }
 
-func Discover(configDir string, showTraitDef bool) error {
+func Discover(configDir string, showDefs bool, showTransformers bool) error {
 	instances := utils.LoadInstances(configDir)
 
 	deps := instances[0].Dependencies()
@@ -65,17 +65,53 @@ func Discover(configDir string, showTraitDef bool) error {
 			value := ctx.BuildInstance(dep)
 
 			fieldIter, _ := value.Fields(cue.Definitions(true), cue.Docs(true))
-
-			fmt.Printf("📜 %s\n", dep.ID())
+			fmt.Printf("[🏷️  traits] \"%s\"\n", dep.ID())
 			for fieldIter.Next() {
 				traits := fieldIter.Value().LookupPath(cue.ParsePath("$metadata.traits"))
 				if traits.Exists() && traits.IsConcrete() {
-					fmt.Printf("traits.%s", fieldIter.Selector().String())
+					fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
 					if utils.HasComments(fieldIter.Value()) {
 						fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
 					}
 					fmt.Println()
-					if showTraitDef {
+					if showDefs {
+						fmt.Println(fieldIter.Value())
+						fmt.Println()
+					}
+				}
+			}
+			fmt.Println()
+		}
+		if showTransformers && strings.Contains(dep.ID(), "transformers") {
+			ctx := cuecontext.New()
+			value := ctx.BuildInstance(dep)
+
+			fieldIter, _ := value.Fields(cue.Definitions(true), cue.Docs(true))
+
+			fmt.Printf("[🏭 transformers] \"%s\"\n", dep.ID())
+			for fieldIter.Next() {
+				transformer := fieldIter.Value().LookupPath(cue.ParsePath("$metadata.transformer"))
+
+				required := ""
+
+				traits := fieldIter.Value().LookupPath(cue.ParsePath("input.$metadata.traits"))
+				if traits.Exists() {
+					traitIter, _ := traits.Fields()
+					for traitIter.Next() {
+						required = fmt.Sprintf("%s trait:%s", required, traitIter.Label())
+					}
+				}
+
+				if transformer.Exists() && transformer.IsConcrete() {
+					fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
+					if utils.HasComments(fieldIter.Value()) {
+						fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
+					}
+					if len(required) > 0 {
+						fmt.Printf(" (requires%s)", required)
+					}
+					fmt.Println()
+					if showDefs {
 						fmt.Println(fieldIter.Value())
 						fmt.Println()
 					}

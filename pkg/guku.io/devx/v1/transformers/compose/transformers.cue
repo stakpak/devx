@@ -21,6 +21,7 @@ _#ComposeResource: {
 	}
 }
 
+// add a compose service
 #AddComposeService: v1.#Transformer & {
 	$metadata: transformer: "AddComposeService"
 
@@ -60,6 +61,7 @@ _#ComposeResource: {
 	}
 }
 
+// expose a compose service ports
 #ExposeComposeService: v1.#Transformer & {
 	$metadata: transformer: "ExposeComposeService"
 
@@ -86,6 +88,7 @@ _#ComposeResource: {
 	}
 }
 
+// add a compose service for a postgres database
 #AddComposePostgres: v1.#Transformer & {
 	$metadata: transformer: "AddComposePostgres"
 

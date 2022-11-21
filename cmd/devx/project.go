@@ -52,7 +52,7 @@ var discoverCmd = &cobra.Command{
 	Aliases: []string{"d"},
 	Short:   "Discover traits",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Discover(configDir, showTraitDef); err != nil {
+		if err := project.Discover(configDir, showDefs, showTransformers); err != nil {
 			return err
 		}
 		return nil
