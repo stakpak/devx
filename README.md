@@ -17,7 +17,7 @@
 
 ## Usage
 
-### Create a stack [By Developers]
+### Create a stack (by Developers)
 A stack is created by the developer to define infrastructure required to run an app.
 ```cue
 package main
@@ -63,7 +63,7 @@ stack: v1.#Stack & {
 }
 ```
 
-### Create your own stack builders or use community packages [By Platform Engineers]
+### Create your own stack builders or use community packages (by Platform Engineers)
 ```cue
 package main
 
