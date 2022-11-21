@@ -23,43 +23,43 @@ A stack is created by the developer to define infrastructure required to run an 
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/traits"
+  "guku.io/devx/v1"
+  "guku.io/devx/v1/traits"
 )
 
 stack: v1.#Stack & {
-	components: {
-		app: {
-			v1.#Component
-			traits.#Workload
-			traits.#Exposable
-			containers: default: {
-				image: "app:v1"
-				env: {
-					PGDB_URL: db.url
-				}
-				volumes: [
-					{
-						source: "bla"
-						target: "/tmp/bla"
-					},
-				]
-			}
-			endpoints: default: {
-				ports: [
-					{
-						port: 8080
-					},
-				]
-			}
-		}
-		db: {
-			v1.#Component
-			traits.#Postgres
-			version:    "12.1"
-			persistent: true
-		}
-	}
+  components: {
+    app: {
+      v1.#Component
+      traits.#Workload
+      traits.#Exposable
+      containers: default: {
+        image: "app:v1"
+        env: {
+          PGDB_URL: db.url
+        }
+        volumes: [
+          {
+            source: "bla"
+            target: "/tmp/bla"
+          },
+        ]
+      }
+      endpoints: default: {
+        ports: [
+          {
+            port: 8080
+          },
+        ]
+      }
+    }
+    db: {
+      v1.#Component
+      traits.#Postgres
+      version:    "12.1"
+      persistent: true
+    }
+  }
 }
 ```
 
@@ -68,28 +68,28 @@ stack: v1.#Stack & {
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/transformers/compose"
+  "guku.io/devx/v1"
+  "guku.io/devx/v1/transformers/compose"
 )
 
 builders: v1.#StackBuilder & {
-    prod: {}
-    stg1: {}
-	dev: {
-		flows: [
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposeService & {},
-					compose.#ExposeComposeService & {},
-				]
-			},
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposePostgres & {},
-				]
-			},
-		]
-	}
+  prod: {}
+  stg1: {}
+  dev: {
+    flows: [
+      v1.#Flow & {
+        pipeline: [
+          compose.#AddComposeService & {},
+          compose.#ExposeComposeService & {},
+        ]
+      },
+      v1.#Flow & {
+        pipeline: [
+          compose.#AddComposePostgres & {},
+        ]
+      },
+    ]
+  }
 }
 ```
 
@@ -135,7 +135,7 @@ pkg
 module: ""
 
 packages: [
-	"github.com/<org name>/<repo name>@<revision>/pkg/domain.com",
+  "github.com/<org name>/<repo name>@<revision>/pkg/domain.com",
 ]		
 ```
 
