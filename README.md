@@ -9,23 +9,22 @@
 
 ## Quick start
 ```bash
-devx project init
-devx project update
-devx project gen
-devx do dev  
+➜ devx project init
+➜ devx project update
+➜ devx project gen
+➜ devx do dev  
 ```
 
 ## Usage
 
 ### Validation
 ```bash
-devx project validate
+➜ devx project validate
 ```
 
 ### Platform capability discovery
 ```bash
-devx project discover --transformers
-➜  examples git:(main) go run ../cmd/devx project discover -t     
+➜ devx project discover --transformers
 [🏷️  traits] "guku.io/devx/v1/traits"
 traits.#Workload        a component that runs a container 
 traits.#Replicable      a component that can be horizontally scaled 
@@ -77,5 +76,5 @@ export GIT_PRIVATE_KEY_FILE_PASSWORD="password"
 
 ### Update packages (pulling updates will replace existing packages)
 ```
-devx project update
+➜ devx project update
 ```
