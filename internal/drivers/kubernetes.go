@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
@@ -11,16 +12,16 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-type ArgoCDDriver struct {
+type KubernetesDriver struct {
 	Path string
 }
 
-func (d *ArgoCDDriver) match(resource cue.Value) bool {
+func (d *KubernetesDriver) match(resource cue.Value) bool {
 	driverName, _ := resource.LookupPath(cue.ParsePath("$metadata.labels.driver")).String()
-	return driverName == "argocd"
+	return driverName == "kubernetes"
 }
 
-func (d *ArgoCDDriver) ApplyAll(stack *stack.Stack) error {
+func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 	foundResources := false
 
 	for _, componentId := range stack.GetTasks() {
@@ -35,12 +36,23 @@ func (d *ArgoCDDriver) ApplyAll(stack *stack.Stack) error {
 					return err
 				}
 
+				kind := resource.LookupPath(cue.ParsePath("kind"))
+				if kind.Err() != nil {
+					return kind.Err()
+				}
+
+				kindString, err := kind.String()
+				if err != nil {
+					return err
+				}
+
 				data, err := yaml.Encode(resource)
 				if err != nil {
 					return err
 				}
 
-				resourceFilePath := path.Join(d.Path, componentId+"-"+resourceIter.Label()+".yml")
+				fileName := fmt.Sprintf("%s-%s-%s.yml", componentId, resourceIter.Label(), strings.ToLower(kindString))
+				resourceFilePath := path.Join(d.Path, fileName)
 				if _, err := os.Stat(d.Path); os.IsNotExist(err) {
 					os.MkdirAll(d.Path, 0700)
 				}
@@ -50,7 +62,7 @@ func (d *ArgoCDDriver) ApplyAll(stack *stack.Stack) error {
 	}
 
 	if foundResources {
-		fmt.Printf("[argocd] applied resources to \"%s/*.yml\"\n", d.Path)
+		fmt.Printf("[kubernetes] applied resources to \"%s/*.yml\"\n", d.Path)
 	}
 
 	return nil

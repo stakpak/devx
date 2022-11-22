@@ -8,7 +8,7 @@ import (
 )
 
 _#ArgoCDApplicationResource: {
-	$metadata: labels: driver: "argocd"
+	$metadata: labels: driver: "kubernetes"
 	argoapp.#Application
 	spec: project: string | *"default"
 }
