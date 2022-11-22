@@ -6,15 +6,22 @@ import (
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/drivers"
+	"devopzilla.com/guku/internal/project"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string) error {
-	fmt.Printf("🏭 Transforming stack for the \"%s\" environment...\n", environment)
-
 	value := utils.LoadProject(configDir)
+	fmt.Printf("👀 Validating stack...\n")
+
+	err := project.ValidateProject(value, stackPath)
+	if err != nil {
+		return err
+	}
+
+	fmt.Printf("🏭 Transforming stack for the \"%s\" environment...\n", environment)
 
 	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
 	if err != nil {

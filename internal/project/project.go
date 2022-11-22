@@ -23,6 +23,15 @@ import (
 
 func Validate(configDir string, stackPath string) error {
 	value := utils.LoadProject(configDir)
+	if err := ValidateProject(value, stackPath); err != nil {
+		return err
+	}
+
+	fmt.Println("👌 All looks good")
+	return nil
+}
+
+func ValidateProject(value cue.Value, stackPath string) error {
 	err := value.Validate()
 	if err != nil {
 		return err
@@ -50,7 +59,6 @@ func Validate(configDir string, stackPath string) error {
 		return err
 	}
 
-	fmt.Println("Looks good 👀👌")
 	return nil
 }
 
