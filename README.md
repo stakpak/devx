@@ -19,6 +19,9 @@
 
 ## Usage
 
+### Configuration language
+[CUE](https://cuelang.org/) is the result of years of experience writing configuration languages at Google, and seeks to improve the developer experience while avoiding some nasty pitfalls. CUE looks like JSON, but with additional features that enable declarative data definition, generation, and validation to be a breeze.
+
 ### Create a stack (by Developers)
 A stack is created by the developer to define infrastructure required to run an app.
 ```cue
