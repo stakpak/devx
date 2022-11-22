@@ -1,6 +1,6 @@
 # guku DevX
 
-[![asciicast](https://asciinema.org/a/cIhBiPlYmIok6H5nsJzmGCoDy.svg)](https://asciinema.org/a/cIhBiPlYmIok6H5nsJzmGCoDy)
+![demo](assets/demo.gif)
 
 ## Developer self-service with a single config file for all envrionments, for all vendors!
 
