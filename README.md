@@ -31,44 +31,14 @@ import (
 
 stack: v1.#Stack & {
 	components: {
-		somechart: {
-			v1.#Component
-			traits.#Helm
-			chart:     "hello-kubernetes-chart"
-			url:       "https://somechart.github.io/my-charts/"
-			version:   "0.1.0"
-			namespace: "tata"
-		}
-		app: {
+		cowsay: {
 			v1.#Component
 			traits.#Workload
-			traits.#Exposable
-			$metadata: labels: app: "app1"
 			containers: default: {
-				image: "app:v1"
-				env: {
-					PGDB_URL: db.url
-				}
-				volumes: [
-					{
-						source: "bla"
-						target: "/tmp/bla"
-					},
-				]
+				image: "docker/whalesay"
+				command: ["cowsay"]
+				args: ["Hello DevX!"]
 			}
-			endpoints: default: {
-				ports: [
-					{
-						port: 8080
-					},
-				]
-			}
-		}
-		db: {
-			v1.#Component
-			traits.#Postgres
-			version:    "12.1"
-			persistent: true
 		}
 	}
 }
@@ -81,23 +51,7 @@ package main
 import (
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/transformers/compose"
-	"guku.io/devx/v1/transformers/terraform"
-	"guku.io/devx/v1/transformers/argocd"
-	"guku.io/devx/v1/transformers/generic"
 )
-
-builders: dev: preflows: [
-	v1.#Flow & {
-		match: labels: {
-			app: "app1"
-		}
-		pipeline: [
-			generic.#AddExtraEnv & {
-				args: env: canary: "canary"
-			},
-		]
-	},
-]
 
 builders: v1.#StackBuilder & {
 	dev: {
@@ -105,37 +59,6 @@ builders: v1.#StackBuilder & {
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
-					compose.#ExposeComposeService & {},
-				]
-			},
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposePostgres & {},
-				]
-			},
-			v1.#Flow & {
-				pipeline: [
-					terraform.#AddHelmRelease & {},
-				]
-			},
-		]
-	}
-	dev2: {
-		mainflows: [
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposeService & {},
-					compose.#ExposeComposeService & {},
-				]
-			},
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposePostgres & {},
-				]
-			},
-			v1.#Flow & {
-				pipeline: [
-					argocd.#AddHelmRelease & {},
 				]
 			},
 		]

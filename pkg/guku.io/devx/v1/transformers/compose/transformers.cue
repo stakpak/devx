@@ -1,6 +1,7 @@
 package compose
 
 import (
+	"list"
 	"strings"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
@@ -16,7 +17,7 @@ _#ComposeResource: {
 		depends_on?: [...string]
 		ports?: [...string]
 		environment?: [string]: string
-		command?: string
+		command?: [...string]
 		volumes?: [...string]
 	}
 }
@@ -41,6 +42,10 @@ _#ComposeResource: {
 				image:       input.containers.default.image
 				environment: input.containers.default.env
 				depends_on:  context.dependencies
+				command:     list.Concat([
+						input.containers.default.command,
+						input.containers.default.args,
+				])
 				volumes: [
 					for v in input.containers.default.volumes {
 						if v.readOnly {
