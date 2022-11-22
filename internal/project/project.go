@@ -443,7 +443,7 @@ func Init(ctx context.Context, parentDir, module string) error {
 
 		contents := fmt.Sprintf(`module: "%s"
 packages: [
-	"github.com/devopzilla/guku-devx@main/pkg/guku.io",
+	"github.com/devopzilla/guku-devx@main/pkg",
 ]
 		`, module)
 		if err := os.WriteFile(modFile, []byte(contents), 0600); err != nil {
