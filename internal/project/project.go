@@ -284,7 +284,9 @@ func Update(configDir string) error {
 			return os.WriteFile(writePath, content, 0700)
 		})
 
-		return err
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
