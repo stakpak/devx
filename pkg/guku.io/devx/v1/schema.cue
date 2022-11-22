@@ -48,14 +48,14 @@ import "list"
 			$metadata: id: Id
 		}
 
-		preFlows: [...#Flow]
-		mainFlows: [...#Flow]
-		postFlows: [...#Flow]
+		preflows: [...#Flow]
+		mainflows: [...#Flow]
+		postflows: [...#Flow]
 
 		flows: list.Concat([
-			preFlows,
-			mainFlows,
-			postFlows,
+			preflows,
+			mainflows,
+			postflows,
 		])
 	}
 }
