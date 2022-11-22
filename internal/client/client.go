@@ -46,5 +46,10 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 	terraform.ApplyAll(stack)
 
+	argocd := drivers.ArgoCDDriver{
+		Path: path.Join("build", environment, "argocd"),
+	}
+	argocd.ApplyAll(stack)
+
 	return nil
 }
