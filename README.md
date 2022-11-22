@@ -1,10 +1,9 @@
-# guku DevX
-
-![demo](assets/demo.gif)
-
 ## Developer self-service with a single config file for all envrionments, for all vendors!
-
 ![alt text](https://devx.guku.io/assets/images/image02.png)
+
+
+## Demo
+![demo](assets/demo.gif)
 
 
 ## Quick start
