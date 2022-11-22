@@ -66,3 +66,29 @@ _#Endpoint: {
 	password: string
 	url:      "postgresql://\(username):\(password)@\(host):\(port)/\(database)"
 }
+
+_#HelmCommon: {
+	chart:     string @guku(required)
+	url:       string @guku(required)
+	version:   string @guku(required)
+	values:    _ | *{}
+	namespace: string
+}
+
+// a helm chart using helm repo
+#Helm: v1.#Trait & {
+	$metadata: traits: Helm: null
+	_#HelmCommon
+}
+
+// a helm chart using git
+#HelmGit: v1.#Trait & {
+	$metadata: traits: HelmGit: null
+	_#HelmCommon
+}
+
+// a helm chart using oci
+#HelmOCI: v1.#Trait & {
+	$metadata: traits: HelmOCI: null
+	_#HelmCommon
+}

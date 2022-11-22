@@ -7,6 +7,14 @@ import (
 
 stack: v1.#Stack & {
 	components: {
+		somechart: {
+			v1.#Component
+			traits.#Helm
+			chart:     "hello-kubernetes-chart"
+			url:       "https://somechart.github.io/my-charts/"
+			version:   "0.1.0"
+			namespace: "tata"
+		}
 		app: {
 			v1.#Component
 			traits.#Workload
