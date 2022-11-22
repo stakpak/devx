@@ -91,8 +91,9 @@ func RemoveMeta(value cue.Value) (cue.Value, error) {
 
 	for iter.Next() {
 		v := iter.Value()
-		if !strings.HasPrefix(v.Path().String(), "$") {
-			result = result.FillPath(v.Path(), v)
+		label, _ := v.Label()
+		if !strings.HasPrefix(label, "$") {
+			result = result.FillPath(cue.ParsePath(label), v)
 		}
 	}
 
