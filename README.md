@@ -25,43 +25,52 @@ A stack is created by the developer to define infrastructure required to run an 
 package main
 
 import (
-  "guku.io/devx/v1"
-  "guku.io/devx/v1/traits"
+	"guku.io/devx/v1"
+	"guku.io/devx/v1/traits"
 )
 
 stack: v1.#Stack & {
-  components: {
-    app: {
-      v1.#Component
-      traits.#Workload
-      traits.#Exposable
-      containers: default: {
-        image: "app:v1"
-        env: {
-          PGDB_URL: db.url
-        }
-        volumes: [
-          {
-            source: "bla"
-            target: "/tmp/bla"
-          },
-        ]
-      }
-      endpoints: default: {
-        ports: [
-          {
-            port: 8080
-          },
-        ]
-      }
-    }
-    db: {
-      v1.#Component
-      traits.#Postgres
-      version:    "12.1"
-      persistent: true
-    }
-  }
+	components: {
+		somechart: {
+			v1.#Component
+			traits.#Helm
+			chart:     "hello-kubernetes-chart"
+			url:       "https://somechart.github.io/my-charts/"
+			version:   "0.1.0"
+			namespace: "tata"
+		}
+		app: {
+			v1.#Component
+			traits.#Workload
+			traits.#Exposable
+			$metadata: labels: app: "app1"
+			containers: default: {
+				image: "app:v1"
+				env: {
+					PGDB_URL: db.url
+				}
+				volumes: [
+					{
+						source: "bla"
+						target: "/tmp/bla"
+					},
+				]
+			}
+			endpoints: default: {
+				ports: [
+					{
+						port: 8080
+					},
+				]
+			}
+		}
+		db: {
+			v1.#Component
+			traits.#Postgres
+			version:    "12.1"
+			persistent: true
+		}
+	}
 }
 ```
 
@@ -70,28 +79,67 @@ stack: v1.#Stack & {
 package main
 
 import (
-  "guku.io/devx/v1"
-  "guku.io/devx/v1/transformers/compose"
+	"guku.io/devx/v1"
+	"guku.io/devx/v1/transformers/compose"
+	"guku.io/devx/v1/transformers/terraform"
+	"guku.io/devx/v1/transformers/argocd"
+	"guku.io/devx/v1/transformers/generic"
 )
 
+builders: dev: preFlows: [
+	v1.#Flow & {
+		match: labels: {
+			app: "app1"
+		}
+		pipeline: [
+			generic.#AddExtraEnv & {
+				args: env: canary: "canary"
+			},
+		]
+	},
+]
+
 builders: v1.#StackBuilder & {
-  prod: {}
-  stg1: {}
-  dev: {
-    flows: [
-      v1.#Flow & {
-        pipeline: [
-          compose.#AddComposeService & {},
-          compose.#ExposeComposeService & {},
-        ]
-      },
-      v1.#Flow & {
-        pipeline: [
-          compose.#AddComposePostgres & {},
-        ]
-      },
-    ]
-  }
+	dev: {
+		mainFlows: [
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeService & {},
+					compose.#ExposeComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposePostgres & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					terraform.#AddHelmRelease & {},
+				]
+			},
+		]
+	}
+	dev2: {
+		mainFlows: [
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeService & {},
+					compose.#ExposeComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposePostgres & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					argocd.#AddHelmRelease & {},
+				]
+			},
+		]
+	}
 }
 ```
 

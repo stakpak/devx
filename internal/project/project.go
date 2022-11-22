@@ -144,10 +144,19 @@ import (
 
 stack: v1.#Stack & {
 	components: {
+		somechart: {
+			v1.#Component
+			traits.#Helm
+			chart:     "hello-kubernetes-chart"
+			url:       "https://somechart.github.io/my-charts/"
+			version:   "0.1.0"
+			namespace: "tata"
+		}
 		app: {
 			v1.#Component
 			traits.#Workload
 			traits.#Exposable
+			$metadata: labels: app: "app1"
 			containers: default: {
 				image: "app:v1"
 				env: {
@@ -175,7 +184,7 @@ stack: v1.#Stack & {
 			persistent: true
 		}
 	}
-}
+}	
 	`), 0700)
 
 	builderPath := path.Join(configDir, "builder.cue")
@@ -183,21 +192,28 @@ stack: v1.#Stack & {
 
 import (
 	"guku.io/devx/v1"
-	"guku.io/devx/v1/traits"
 	"guku.io/devx/v1/transformers/compose"
+	"guku.io/devx/v1/transformers/terraform"
+	"guku.io/devx/v1/transformers/argocd"
+	"guku.io/devx/v1/transformers/generic"
 )
+
+builders: dev: preFlows: [
+	v1.#Flow & {
+		match: labels: {
+			app: "app1"
+		}
+		pipeline: [
+			generic.#AddExtraEnv & {
+				args: env: canary: "canary"
+			},
+		]
+	},
+]
 
 builders: v1.#StackBuilder & {
 	dev: {
-		additionalComponents: {
-			observedb: {
-				v1.#Component
-				traits.#Postgres
-				version:    "12.1"
-				persistent: true
-			}
-		}
-		flows: [
+		mainFlows: [
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
@@ -207,6 +223,31 @@ builders: v1.#StackBuilder & {
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposePostgres & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					terraform.#AddHelmRelease & {},
+				]
+			},
+		]
+	}
+	dev2: {
+		mainFlows: [
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeService & {},
+					compose.#ExposeComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposePostgres & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					argocd.#AddHelmRelease & {},
 				]
 			},
 		]

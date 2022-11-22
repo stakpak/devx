@@ -1,5 +1,7 @@
 package v1
 
+import "list"
+
 #Trait: {
 	$metadata: traits: [string]: _ | *null
 	...
@@ -45,7 +47,16 @@ package v1
 		additionalComponents?: [Id=string]: #Component & {
 			$metadata: id: Id
 		}
-		flows: [...#Flow]
+
+		preFlows: [...#Flow]
+		mainFlows: [...#Flow]
+		postFlows: [...#Flow]
+
+		flows: list.Concat([
+			preFlows,
+			mainFlows,
+			postFlows,
+		])
 	}
 }
 

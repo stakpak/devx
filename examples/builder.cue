@@ -5,11 +5,25 @@ import (
 	"guku.io/devx/v1/transformers/compose"
 	"guku.io/devx/v1/transformers/terraform"
 	"guku.io/devx/v1/transformers/argocd"
+	"guku.io/devx/v1/transformers/generic"
 )
+
+builders: dev: preFlows: [
+	v1.#Flow & {
+		match: labels: {
+			app: "app1"
+		}
+		pipeline: [
+			generic.#AddExtraEnv & {
+				args: env: canary: "canary"
+			},
+		]
+	},
+]
 
 builders: v1.#StackBuilder & {
 	dev: {
-		flows: [
+		mainFlows: [
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
@@ -29,7 +43,7 @@ builders: v1.#StackBuilder & {
 		]
 	}
 	dev2: {
-		flows: [
+		mainFlows: [
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},

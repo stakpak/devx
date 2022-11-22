@@ -19,6 +19,7 @@ stack: v1.#Stack & {
 			v1.#Component
 			traits.#Workload
 			traits.#Exposable
+			$metadata: labels: app: "app1"
 			containers: default: {
 				image: "app:v1"
 				env: {
