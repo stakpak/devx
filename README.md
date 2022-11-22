@@ -14,7 +14,8 @@
 ➜ devx project gen
 ➜ devx do dev
 🏭 Transforming stack for the "dev" environment...
-[compose] applied resources to "compose/docker-compose.yml"
+[compose] applied resources to "build/dev/compose/docker-compose.yml"
+[terraform] applied resources to "build/dev/terraform/generated.tf.json"
 ```
 
 ## Usage
@@ -105,15 +106,24 @@ Looks good 👀👌
 ```bash
 ➜ devx project discover --transformers
 [🏷️  traits] "guku.io/devx/v1/traits"
-traits.#Workload        a component that runs a container 
-traits.#Replicable      a component that can be horizontally scaled 
-traits.#Exposable       a component that has endpoints that can be exposed 
-traits.#Postgres        a postgres database 
+traits.#Workload	a component that runs a container 
+traits.#Replicable	a component that can be horizontally scaled 
+traits.#Exposable	a component that has endpoints that can be exposed 
+traits.#Postgres	a postgres database 
+traits.#Helm	a helm chart using helm repo 
+traits.#HelmGit	a helm chart using git 
+traits.#HelmOCI	a helm chart using oci 
+
+[🏭 transformers] "guku.io/devx/v1/transformers/argocd"
+argocd.#AddHelmRelease	add a helm release  (requires trait:Helm)
 
 [🏭 transformers] "guku.io/devx/v1/transformers/compose"
-compose.#AddComposeService      add a compose service  (requires trait:Workload)
-compose.#ExposeComposeService   expose a compose service ports  (requires trait:Exposable)
-compose.#AddComposePostgres     add a compose service for a postgres database  (requires trait:Postgres)
+compose.#AddComposeService	add a compose service  (requires trait:Workload)
+compose.#ExposeComposeService	expose a compose service ports  (requires trait:Exposable)
+compose.#AddComposePostgres	add a compose service for a postgres database  (requires trait:Postgres)
+
+[🏭 transformers] "guku.io/devx/v1/transformers/terraform"
+terraform.#AddHelmRelease	add a helm release  (requires trait:Helm)
 ```
 
 ## Package management
