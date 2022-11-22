@@ -2,6 +2,7 @@ package client
 
 import (
 	"fmt"
+	"path"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/drivers"
@@ -36,9 +37,14 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 
 	compose := drivers.ComposeDriver{
-		Path: "compose",
+		Path: path.Join("build", environment, "compose"),
 	}
 	compose.ApplyAll(stack)
+
+	terraform := drivers.TerraformDriver{
+		Path: path.Join("build", environment, "terraform"),
+	}
+	terraform.ApplyAll(stack)
 
 	return nil
 }
