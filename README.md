@@ -86,7 +86,7 @@ import (
 	"guku.io/devx/v1/transformers/generic"
 )
 
-builders: dev: preFlows: [
+builders: dev: preflows: [
 	v1.#Flow & {
 		match: labels: {
 			app: "app1"
@@ -101,7 +101,7 @@ builders: dev: preFlows: [
 
 builders: v1.#StackBuilder & {
 	dev: {
-		mainFlows: [
+		mainflows: [
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
@@ -121,7 +121,7 @@ builders: v1.#StackBuilder & {
 		]
 	}
 	dev2: {
-		mainFlows: [
+		mainflows: [
 			v1.#Flow & {
 				pipeline: [
 					compose.#AddComposeService & {},
