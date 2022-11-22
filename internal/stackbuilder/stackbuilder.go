@@ -2,6 +2,7 @@ package stackbuilder
 
 import (
 	"fmt"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
@@ -82,7 +83,22 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 			}
 		}
 		if !stack.IsConcreteComponent(componentId) {
-			return fmt.Errorf("Component %s is not concrete after transformation", componentId)
+			// find all errors
+			errors := []string{}
+			c, _ := stack.GetComponent(componentId)
+
+			c.Walk(func(_ cue.Value) bool { return true }, func(value cue.Value) {
+				if value.Err() != nil {
+					errors = append(errors, value.Err().Error())
+				}
+
+				err := value.Validate(cue.Concrete(true))
+				if err != nil {
+					errors = append(errors, fmt.Sprintf("%s: %s", value.Path(), err.Error()))
+				}
+			})
+
+			return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
 		}
 	}
 	return nil
