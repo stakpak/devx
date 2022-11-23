@@ -9,11 +9,10 @@ _#Container: {
 	image: string @guku(required)
 	command: [...string]
 	args: [...string]
-	env: [string]:    string
-	mounts: [string]: string
-	volumes: [...{
-		source:   string
-		target:   string
+	env: [string]: string
+	mounts: [...{
+		volume:   _#VolumeSpec
+		path:     string
 		readOnly: bool | *true
 	}]
 }
@@ -50,6 +49,22 @@ _#Endpoint: {
 
 	endpoints: [string]: _#Endpoint
 	endpoints: default:  _#Endpoint
+}
+
+_#VolumeSpec: {
+	local: string
+} | {
+	ephemeral: string
+} | {
+	persistent: string
+}
+
+// a component that has a volume
+#Volume: v1.#Trait & {
+	$metadata: traits: Volume: null
+
+	volumes: [string]: _#VolumeSpec
+	volumes: default:  _#VolumeSpec
 }
 
 // a postgres database

@@ -2,7 +2,6 @@ package compose
 
 import (
 	"list"
-	"strings"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 )
@@ -47,19 +46,42 @@ _#ComposeResource: {
 						input.containers.default.args,
 				])
 				volumes: [
-					for v in input.containers.default.volumes {
-						if v.readOnly {
-							"\(v.source):\(v.target):ro"
-						}
-						if !v.readOnly {
-							"\(v.source):\(v.target)"
-						}
+					for m in input.containers.default.mounts {
+						_mapping: [
+								if m.volume.local != _|_ {"\(m.volume.local):\(m.path)"},
+								if m.volume.persistent != _|_ {"\(m.volume.persistent):\(m.path)"},
+						][0]
+						_suffix: [
+								if m.readOnly {":ro"},
+								if !m.readOnly {""},
+						][0]
+						"\(_mapping)\(_suffix)"
 					},
 				]
 			}
-			for v in input.containers.default.volumes {
-				if !strings.HasPrefix(v.source, ".") && !strings.HasPrefix(v.source, "/") {
-					volumes: "\(v.source)": null
+		}
+	}
+}
+
+// add a compose service
+#AddComposeVolume: v1.#Transformer & {
+	$metadata: transformer: "AddComposeVolume"
+
+	args: {}
+	context: {
+		dependencies: [...string]
+	}
+	input: {
+		v1.#Component
+		traits.#Volume
+		...
+	}
+	output: {
+		$resources: compose: _#ComposeResource & {
+			for k, v in input.volumes {
+				// only persistent volumes supported in compose
+				if v.persistent != _|_ {
+					volumes: "\(v.persistent)": null
 				}
 			}
 		}

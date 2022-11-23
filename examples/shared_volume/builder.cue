@@ -13,6 +13,16 @@ builders: v1.#StackBuilder & {
 					compose.#AddComposeService & {},
 				]
 			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#ExposeComposeService & {},
+				]
+			},
+			v1.#Flow & {
+				pipeline: [
+					compose.#AddComposeVolume & {},
+				]
+			},
 		]
 	}
 }
