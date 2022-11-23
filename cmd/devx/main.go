@@ -47,8 +47,9 @@ func init() {
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "devx",
-	Short: "guku DevX cloud native self-service magic",
+	Use:          "devx",
+	Short:        "guku DevX cloud native self-service magic",
+	SilenceUsage: true,
 }
 
 var versionCmd = &cobra.Command{
@@ -69,7 +70,6 @@ var versionCmd = &cobra.Command{
 
 func main() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
 		os.Exit(1)
 	}
 }
