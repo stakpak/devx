@@ -20,10 +20,13 @@
 ## Usage
 
 ### Configuration language
-[CUE](https://cuelang.org/) is the result of years of experience writing configuration languages at Google, and seeks to improve the developer experience while avoiding some nasty pitfalls. CUE looks like JSON, but with additional features that enable declarative data definition, generation, and validation to be a breeze. You can find a primer on CUE [here](https://docs.dagger.io/1215/what-is-cue/#understanding-cue).
+We use [CUE](https://cuelang.org/) to write strongly typed configurations. You can now shift YAML typos left, instead of detecting errors when applying configurations. You can easily transform CUE configuration files to and from YAML (CUE is a superset of YAML & JSON).
+
+[CUE](https://cuelang.org/) is the result of years of experience writing configuration languages at Google, and seeks to improve the developer experience while avoiding some nasty pitfalls. CUE looks like JSON, while making declarative data definition, generation, and validation a breeze. You can find a primer on CUE [here](https://docs.dagger.io/1215/what-is-cue/#understanding-cue).
+
 
 ### Create a stack (by Developers)
-A stack is created by the developer to define infrastructure required to run an app.
+You create a stack to define the workload and its dependencies.
 ```cue
 package main
 
@@ -48,6 +51,7 @@ stack: v1.#Stack & {
 ```
 
 ### Create your own stack builders or use community packages (by Platform Engineers)
+You can customize how the stack is processed by writing declarative transformers.
 ```cue
 package main
 
@@ -70,9 +74,10 @@ builders: v1.#StackBuilder & {
 ```
 
 ### Validation
+Validate configurations while writing
 ```bash
 ➜ devx project validate
-Looks good 👀👌
+👌 Looks good
 ```
 
 ### Platform capability discovery
@@ -101,10 +106,10 @@ terraform.#AddHelmRelease	add a helm release  (requires trait:Helm)
 
 ## Package management
 
-devx can pull CUE code directly from git repositories.
+You can publish and share CUE packages directly through git repositories.
 
 ### Create a new packages
-Create a new repository to store your packages, you can host multiple packages in the same repository.
+Create a new repository to store your packages (you can host multiple packages per repository).
 
 ```bash
 pkg
