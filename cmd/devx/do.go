@@ -6,8 +6,9 @@ import (
 )
 
 var doCmd = &cobra.Command{
-	Use:   "do",
+	Use:   "do [environment]",
 	Short: "do DevX magic for the specified environment",
+	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := client.Run(args[0], configDir, stackPath, buildersPath); err != nil {
 			return err
