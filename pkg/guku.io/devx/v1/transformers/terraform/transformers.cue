@@ -15,7 +15,8 @@ _#TerraformResource: {
 	$metadata: transformer: "AddHelmRelease"
 
 	args: {
-		defaultNamespace: string
+		defaultNamespace:  string
+		overrideNamespace: string
 	}
 	context: {
 		dependencies: [...string]
@@ -25,13 +26,18 @@ _#TerraformResource: {
 		traits.#Helm
 		...
 	}
+	_namespace: [
+			if (args.overrideNamespace & "*#?$**") == _|_ {args.overrideNamespace},
+			if (input.namespace & "*#?$**") == _|_ {input.namespace},
+			if (args.defaultNamespace & "*#?$**") == _|_ {args.defaultNamespace},
+	][0]
 	output: {
-		namespace: input.namespace
+		namespace: _namespace
 		$resources: terraform: {
 			_#TerraformResource
 			resource: helm_release: "\(input.$metadata.id)": {
 				name:             input.$metadata.id
-				namespace:        input.namespace
+				namespace:        _namespace
 				repository:       input.url
 				chart:            input.chart
 				version:          input.version

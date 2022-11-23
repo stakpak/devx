@@ -18,7 +18,8 @@ _#ArgoCDApplicationResource: {
 	$metadata: transformer: "AddHelmRelease"
 
 	args: {
-		defaultNamespace: string
+		defaultNamespace:  string
+		overrideNamespace: string
 	}
 	context: {
 		dependencies: [...string]
@@ -28,15 +29,20 @@ _#ArgoCDApplicationResource: {
 		traits.#Helm
 		...
 	}
+	_namespace: [
+			if (args.overrideNamespace & "*#?$**") == _|_ {args.overrideNamespace},
+			if (input.namespace & "*#?$**") == _|_ {input.namespace},
+			if (args.defaultNamespace & "*#?$**") == _|_ {args.defaultNamespace},
+	][0]
 	output: {
-		namespace: input.namespace
+		namespace: _namespace
 		$resources: "\(input.$metadata.id)": {
 			_#ArgoCDApplicationResource
 			kind:       "Application"
 			apiVersion: "argoproj.io/v1alpha1"
 			metadata: {
 				name:      input.$metadata.id
-				namespace: input.namespace
+				namespace: _namespace
 				finalizers: [
 					"resources-finalizer.argocd.argoproj.io",
 				]
@@ -55,7 +61,7 @@ _#ArgoCDApplicationResource: {
 					}
 				}
 				destination: {
-					namespace: input.namespace
+					namespace: _namespace
 				}
 
 				syncPolicy: argoapp.#SyncPolicy & {
