@@ -17,7 +17,7 @@ _#Container: {
 	}]
 }
 
-// a component that runs a container
+// a component that runs containers
 #Workload: v1.#Trait & {
 	$metadata: traits: Workload: null
 
