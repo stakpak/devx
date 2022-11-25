@@ -15,68 +15,55 @@ _#ArgoCDApplicationResource: {
 
 // add a helm release
 #AddHelmRelease: v1.#Transformer & {
-	$metadata: transformer: "AddHelmRelease"
+	$dependencies: [...string]
+	v1.#Component
+	traits.#Helm
+	$metadata: _
+	namespace: string
+	chart:     _
+	url:       _
+	version:   _
+	values:    _
+	$resources: "\($metadata.id)": {
+		_#ArgoCDApplicationResource
+		kind:       "Application"
+		apiVersion: "argoproj.io/v1alpha1"
+		metadata: {
+			name:        $metadata.id
+			"namespace": namespace
+			finalizers: [
+				"resources-finalizer.argocd.argoproj.io",
+			]
+		}
+		spec: {
+			source: {
 
-	args: {
-		defaultNamespace:  string
-		overrideNamespace: string
-	}
-	context: {
-		dependencies: [...string]
-	}
-	input: {
-		v1.#Component
-		traits.#Helm
-		...
-	}
-	_namespace: [
-			if (args.overrideNamespace & "*#?$**") == _|_ {args.overrideNamespace},
-			if (input.namespace & "*#?$**") == _|_ {input.namespace},
-			if (args.defaultNamespace & "*#?$**") == _|_ {args.defaultNamespace},
-	][0]
-	output: {
-		namespace: _namespace
-		$resources: "\(input.$metadata.id)": {
-			_#ArgoCDApplicationResource
-			kind:       "Application"
-			apiVersion: "argoproj.io/v1alpha1"
-			metadata: {
-				name:      input.$metadata.id
-				namespace: _namespace
-				finalizers: [
-					"resources-finalizer.argocd.argoproj.io",
-				]
+				"chart": chart
+
+				repoURL:        url
+				targetRevision: version
+
+				helm: {
+					releaseName: $metadata.id
+					"values":    yaml.Marshal(values)
+				}
 			}
-			spec: {
-				source: {
+			destination: {
+				"namespace": namespace
+			}
 
-					chart: input.chart
-
-					repoURL:        input.url
-					targetRevision: input.version
-
-					helm: {
-						releaseName: input.$metadata.id
-						values:      yaml.Marshal(input.values)
-					}
+			syncPolicy: argoapp.#SyncPolicy & {
+				automated: {
+					prune:      bool | *true
+					selfHeal:   bool | *true
+					allowEmpty: bool | *false
 				}
-				destination: {
-					namespace: _namespace
-				}
-
-				syncPolicy: argoapp.#SyncPolicy & {
-					automated: {
-						prune:      bool | *true
-						selfHeal:   bool | *true
-						allowEmpty: bool | *false
-					}
-					syncOptions: [...string] | *[
-							"CreateNamespace=true",
-							"PrunePropagationPolicy=foreground",
-							"PruneLast=true",
-					]
-					retry: limit: uint | *5
-				}
+				syncOptions: [...string] | *[
+						"CreateNamespace=true",
+						"PrunePropagationPolicy=foreground",
+						"PruneLast=true",
+				]
+				retry: limit: uint | *5
 			}
 		}
 	}

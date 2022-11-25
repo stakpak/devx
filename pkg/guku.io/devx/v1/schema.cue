@@ -23,21 +23,11 @@ import "list"
 }
 
 #Transformer: {
-	$metadata: transformer: string
-
-	args: _
-
-	context: _
-
-	input: #Component
-
-	output: {
-		input
-		$resources: [string]: {
-			$metadata: labels: [string]: string
-			$metadata: labels: driver:   string
-			...
-		}
+	#Component
+	$resources: [string]: {
+		$metadata: labels: [string]: string
+		$metadata: labels: driver:   string
+		...
 	}
 }
 
@@ -74,6 +64,6 @@ import "list"
 
 	// include all transformer traits by default in match
 	for t in pipeline {
-		match: traits: t.input.$metadata.traits
+		match: traits: t.$metadata.traits
 	}
 }

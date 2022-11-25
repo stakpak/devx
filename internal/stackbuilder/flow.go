@@ -99,20 +99,20 @@ func (f *Flow) Run(stack *stack.Stack, componentId string) error {
 		return err
 	}
 
-	context := component.Context().CompileString("_")
-	context = context.FillPath(cue.ParsePath("dependencies"), dependencies)
-
+	// Transform
+	component = component.FillPath(cue.ParsePath("$dependencies"), dependencies)
 	for _, transformer := range f.pipeline {
-		component, err = Transform(
-			transformer,
-			component,
-			context,
-		)
-		if err != nil {
-			return err
+		component = component.FillPath(cue.ParsePath(""), transformer)
+		if component.Err() != nil {
+			return component.Err()
 		}
 	}
+	component = populateGeneratedFields(component)
+	if component.Err() != nil {
+		return component.Err()
+	}
 
+	// Apply changes to component
 	err = stack.UpdateComponent(componentId, component)
 	if err != nil {
 		return err
@@ -121,41 +121,7 @@ func (f *Flow) Run(stack *stack.Stack, componentId string) error {
 	return nil
 }
 
-func Transform(transformer cue.Value, component cue.Value, context cue.Value) (cue.Value, error) {
-	bottom := transformer.Context().CompileString("_|_")
-
-	transformerContext := transformer.LookupPath(cue.ParsePath("context"))
-	transformerContext = transformerContext.Fill(context)
-	if transformerContext.Err() != nil {
-		return bottom, transformer.Err()
-	}
-	transformerContext = populateGeneratedFields(transformerContext)
-	if transformerContext.Err() != nil {
-		return bottom, transformer.Err()
-	}
-
-	transformer = transformer.FillPath(
-		cue.ParsePath("context"),
-		transformerContext,
-	)
-	if transformer.Err() != nil {
-		return bottom, transformer.Err()
-	}
-	transformer = transformer.FillPath(
-		cue.ParsePath("input"),
-		component,
-	)
-	if transformer.Err() != nil {
-		return bottom, transformer.Err()
-	}
-
-	return transformer.LookupPath(cue.ParsePath("output")), nil
-}
-
 func populateGeneratedFields(value cue.Value) cue.Value {
-	result := value.Context().CompileString("_")
-	result = result.Fill(value)
-
 	pathsToFill := []cue.Path{}
 	utils.Walk(value, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
@@ -163,18 +129,18 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 			isGenerated, _ := gukuAttr.Flag(0, "generate")
 			if isGenerated {
 				selectors := v.Path().Selectors()
-				pathsToFill = append(pathsToFill, cue.MakePath(selectors[1:]...))
+				pathsToFill = append(pathsToFill, cue.MakePath(selectors[3:]...))
 			}
 		}
 		return true
 	}, nil)
 
 	for _, path := range pathsToFill {
-		result = result.FillPath(path, "dummy")
-		if result.Err() != nil {
-			return result
+		value = value.FillPath(path, "dummy")
+		if value.Err() != nil {
+			return value
 		}
 	}
 
-	return result
+	return value
 }
