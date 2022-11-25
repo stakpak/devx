@@ -2,9 +2,11 @@ package main
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/spf13/cobra"
 
+	"cuelang.org/go/cue/errors"
 	"devopzilla.com/guku/internal/project"
 )
 
@@ -41,7 +43,10 @@ var validateCmd = &cobra.Command{
 	Short:   "Validate configurations",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := project.Validate(configDir, stackPath); err != nil {
-			return err
+			if err != nil {
+				return fmt.Errorf(errors.Details(err, nil))
+			}
+			return nil
 		}
 		return nil
 	},
