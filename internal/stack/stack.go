@@ -113,11 +113,7 @@ func (s *Stack) GetTasks() []string {
 }
 
 func (s *Stack) AddComponents(value cue.Value) {
-	taskIter, _ := value.Fields()
-	for taskIter.Next() {
-		id := utils.GetLastPathFragement(taskIter.Value())
-		s.components = s.components.FillPath(cue.ParsePath(id), taskIter.Value())
-	}
+	s.components = s.components.FillPath(cue.ParsePath(""), value)
 
 	cfg := &cueflow.Config{
 		FindHiddenTasks: true,

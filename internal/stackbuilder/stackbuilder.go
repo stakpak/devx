@@ -44,8 +44,7 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 	var additionalComponents *cue.Value
 	additionalComponentsValue := value.LookupPath(cue.ParsePath("additionalComponents"))
 	if additionalComponentsValue.Exists() {
-		newValue := value.Context().CompileString("{}").Fill(additionalComponentsValue)
-		additionalComponents = &newValue
+		additionalComponents = &additionalComponentsValue
 	}
 
 	stackBuilder := StackBuilder{
