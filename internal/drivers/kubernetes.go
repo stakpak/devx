@@ -46,12 +46,22 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 					return err
 				}
 
+				name := resource.LookupPath(cue.ParsePath("metadata.name"))
+				if kind.Err() != nil {
+					return kind.Err()
+				}
+
+				nameString, err := name.String()
+				if err != nil {
+					return err
+				}
+
 				data, err := yaml.Encode(resource)
 				if err != nil {
 					return err
 				}
 
-				fileName := fmt.Sprintf("%s-%s-%s.yml", componentId, resourceIter.Label(), strings.ToLower(kindString))
+				fileName := fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString))
 				resourceFilePath := path.Join(d.Path, fileName)
 				if _, err := os.Stat(d.Path); os.IsNotExist(err) {
 					os.MkdirAll(d.Path, 0700)
