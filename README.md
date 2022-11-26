@@ -1,10 +1,9 @@
-## Developer-centric configurations using a single config for all envrionments, for all vendors!
+## Introduction
+
+Guku DevX is a tool for building developer-centric interfaces for your internal developer platform (IDP). Use DevX to standardise how developers run apps and enable infrastructure self-service.
+
+**Developer-centric configurations using a single config for all envrionments, for all vendors!**
 ![alt text](https://devx.guku.io/assets/images/image02.png)
-
-
-## Demo
-![demo](assets/demo.gif)
-
 
 ## Quick start
 ```bash
@@ -16,6 +15,9 @@
 [compose] applied resources to "build/dev/compose/docker-compose.yml"
 [terraform] applied resources to "build/dev/terraform/generated.tf.json"
 ```
+
+![demo](assets/demo.gif)
+
 
 ## Usage
 
