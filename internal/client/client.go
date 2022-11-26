@@ -13,6 +13,7 @@ import (
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string) error {
+	fmt.Printf("🏗️  Loading stack...\n")
 	value := utils.LoadProject(configDir)
 	fmt.Printf("👀 Validating stack...\n")
 
