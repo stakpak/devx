@@ -15,6 +15,16 @@ _#Container: {
 		path:     string
 		readOnly: bool | *true
 	}]
+	resources: {
+		requests?: {
+			cpu?:    string
+			memory?: string
+		}
+		limits?: {
+			cpu?:    string
+			memory?: string
+		}
+	}
 }
 
 // a component that runs containers
