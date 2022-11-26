@@ -128,3 +128,17 @@ _#ComposeResource: {
 		}
 	}
 }
+
+// add compose build filed to build an image locally
+#AddComposeBuild: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+	build: {
+		context: string | *"."
+		args: [string]: string
+	}
+	$metadata: _
+	$resources: compose: _#ComposeResource & {
+		services: "\($metadata.id)": "build": build
+	}
+}
