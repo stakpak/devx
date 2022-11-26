@@ -37,6 +37,10 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
 		}
 	}
 
+	if !foundResources {
+		return nil
+	}
+
 	terraformFile, err := utils.RemoveMeta(terraformFile)
 	if err != nil {
 		return err
@@ -52,9 +56,7 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	os.WriteFile(terraformFilePath, data, 0700)
 
-	if foundResources {
-		fmt.Printf("[terraform] applied resources to \"%s\"\n", terraformFilePath)
-	}
+	fmt.Printf("[terraform] applied resources to \"%s\"\n", terraformFilePath)
 
 	return nil
 }

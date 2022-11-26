@@ -37,6 +37,10 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 		}
 	}
 
+	if !foundResources {
+		return nil
+	}
+
 	composeFile, err := utils.RemoveMeta(composeFile)
 	if err != nil {
 		return err
@@ -52,9 +56,7 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	os.WriteFile(composeFilePath, data, 0700)
 
-	if foundResources {
-		fmt.Printf("[compose] applied resources to \"%s\"\n", composeFilePath)
-	}
+	fmt.Printf("[compose] applied resources to \"%s\"\n", composeFilePath)
 
 	return nil
 }

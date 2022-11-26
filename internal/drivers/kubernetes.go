@@ -61,9 +61,11 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 		}
 	}
 
-	if foundResources {
-		fmt.Printf("[kubernetes] applied resources to \"%s/*.yml\"\n", d.Path)
+	if !foundResources {
+		return nil
 	}
+
+	fmt.Printf("[kubernetes] applied resources to \"%s/*.yml\"\n", d.Path)
 
 	return nil
 }

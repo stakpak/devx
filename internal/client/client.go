@@ -46,17 +46,26 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	compose := drivers.ComposeDriver{
 		Path: path.Join("build", environment, "compose"),
 	}
-	compose.ApplyAll(stack)
+	err = compose.ApplyAll(stack)
+	if err != nil {
+		return fmt.Errorf("error running compose driver: %s", err)
+	}
 
 	terraform := drivers.TerraformDriver{
 		Path: path.Join("build", environment, "terraform"),
 	}
-	terraform.ApplyAll(stack)
+	err = terraform.ApplyAll(stack)
+	if err != nil {
+		return fmt.Errorf("error running terraform driver: %s", err)
+	}
 
 	kubernetes := drivers.KubernetesDriver{
 		Path: path.Join("build", environment, "kubernetes"),
 	}
-	kubernetes.ApplyAll(stack)
+	err = kubernetes.ApplyAll(stack)
+	if err != nil {
+		return fmt.Errorf("error running kubernetes driver: %s", err)
+	}
 
 	return nil
 }
