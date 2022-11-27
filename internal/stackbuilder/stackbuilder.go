@@ -74,7 +74,6 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 	for _, flow := range sb.Flows {
 		total += len(orderedTasks) * len(flow.pipeline)
 	}
-	progressbar.OptionSetPredictTime(true)
 	bar := progressbar.Default(int64(total), "🏭 Transforming stack")
 	defer bar.Finish()
 	for _, componentId := range orderedTasks {
@@ -89,7 +88,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 					componentId,
 				)
 			}
-			bar.Add(1)
+			bar.Add(len(flow.pipeline))
 		}
 		if !stack.IsConcreteComponent(componentId) {
 			// find all errors
