@@ -7,6 +7,7 @@ import (
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	progressbar "github.com/schollz/progressbar/v3"
 )
 
 type Environments = map[string]*StackBuilder
@@ -68,6 +69,14 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 		stack.AddComponents(*sb.AdditionalComponents)
 	}
 	orderedTasks := stack.GetTasks()
+
+	total := 0
+	for _, flow := range sb.Flows {
+		total += len(orderedTasks) * len(flow.pipeline)
+	}
+	progressbar.OptionSetPredictTime(true)
+	bar := progressbar.Default(int64(total), "🏭 Transforming stack")
+	defer bar.Finish()
 	for _, componentId := range orderedTasks {
 		for _, flow := range sb.Flows {
 			err := flow.Run(stack, componentId)
@@ -80,6 +89,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 					componentId,
 				)
 			}
+			bar.Add(1)
 		}
 		if !stack.IsConcreteComponent(componentId) {
 			// find all errors

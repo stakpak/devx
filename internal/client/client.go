@@ -22,8 +22,6 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 		return err
 	}
 
-	fmt.Printf("🏭 Transforming stack for the \"%s\" environment...\n", environment)
-
 	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
 	if err != nil {
 		return err
