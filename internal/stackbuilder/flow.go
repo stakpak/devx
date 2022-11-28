@@ -26,19 +26,14 @@ func NewFlow(value cue.Value) (*Flow, error) {
 		return nil, pipelineValue.Err()
 	}
 
-	ctx := value.Context()
 	flow := Flow{
-		match:    ctx.CompileString("_"),
-		exclude:  ctx.CompileString("_"),
+		match:    matchValue,
+		exclude:  excludeValue,
 		pipeline: make([]cue.Value, 0),
 	}
-	flow.match = flow.match.Fill(matchValue)
-	flow.exclude = flow.exclude.Fill(excludeValue)
 	pipelineIter, _ := pipelineValue.List()
 	for pipelineIter.Next() {
-		transformer := ctx.CompileString("_")
-		transformer = transformer.Fill(pipelineIter.Value())
-		flow.pipeline = append(flow.pipeline, transformer)
+		flow.pipeline = append(flow.pipeline, pipelineIter.Value())
 	}
 
 	return &flow, nil
@@ -53,14 +48,13 @@ func (f *Flow) Match(component cue.Value) bool {
 		fieldName := utils.GetLastPathFragement(matchIter.Value())
 		componentField := metadata.LookupPath(cue.ParsePath(fieldName))
 
-		matchSubfieldsIter, _ := matchIter.Value().Fields()
-		for matchSubfieldsIter.Next() {
-			matchSubfieldName := utils.GetLastPathFragement(matchSubfieldsIter.Value())
-			componentSubfield := componentField.LookupPath(cue.ParsePath(matchSubfieldName))
+		if !componentField.Exists() {
+			return false
+		}
 
-			if !componentSubfield.Exists() || !componentSubfield.Equals(matchSubfieldsIter.Value()) {
-				return false
-			}
+		err := matchIter.Value().Subsume(componentField, cue.Final())
+		if err != nil {
+			return false
 		}
 	}
 
