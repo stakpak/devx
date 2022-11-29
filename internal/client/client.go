@@ -12,7 +12,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
 	fmt.Printf("🏗️  Loading stack...\n")
 	value := utils.LoadProject(configDir)
 	fmt.Printf("👀 Validating stack...\n")
@@ -41,6 +41,11 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	if err != nil {
 		return err
 	}
+
+    if dryRun {
+        fmt.Println(stack.GetComponents())
+        return nil
+    }
 
 	compose := drivers.ComposeDriver{
 		Path: path.Join("build", environment, "compose"),
