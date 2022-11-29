@@ -66,6 +66,7 @@ func (s *Stack) GetDependencies(id string) ([]string, error) {
 }
 
 func (s *Stack) UpdateComponent(id string, value cue.Value) error {
+	// s.components.
 	s.components = s.components.FillPath(cue.ParsePath(id), value)
 	if s.components.Err() != nil {
 		return s.components.Err()
@@ -78,14 +79,12 @@ func (s *Stack) GetComponent(id string) (cue.Value, error) {
 	return result, result.Err()
 }
 
-func (s *Stack) IsConcreteComponent(id string) bool {
-	component := s.components.LookupPath(cue.ParsePath(id))
+func (s *Stack) IsConcreteComponent(component cue.Value) bool {
 	err := component.Validate(cue.Concrete(true))
 	return err == nil
 }
 
-func (s *Stack) HasConcreteResourceDrivers(id string) bool {
-	component := s.components.LookupPath(cue.ParsePath(id))
+func (s *Stack) HasConcreteResourceDrivers(component cue.Value) bool {
 	resources := component.LookupPath(cue.ParsePath("$resource"))
 
 	if resources.Exists() {
@@ -201,5 +200,5 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 }
 
 func (s *Stack) GetComponents() cue.Value {
-    return s.components
+	return s.components
 }

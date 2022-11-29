@@ -78,19 +78,14 @@ func (f *Flow) Match(component cue.Value) bool {
 	return true
 }
 
-func (f *Flow) Run(stack *stack.Stack, componentId string) error {
-	component, err := stack.GetComponent(componentId)
-	if err != nil {
-		return err
-	}
-
+func (f *Flow) Run(stack *stack.Stack, componentId string, component cue.Value) (cue.Value, error) {
 	if !f.Match(component) {
-		return nil
+		return component, nil
 	}
 
 	dependencies, err := stack.GetDependencies(componentId)
 	if err != nil {
-		return err
+		return component, err
 	}
 
 	// Transform
@@ -98,21 +93,15 @@ func (f *Flow) Run(stack *stack.Stack, componentId string) error {
 	for _, transformer := range f.pipeline {
 		component = component.FillPath(cue.ParsePath(""), transformer)
 		if component.Err() != nil {
-			return component.Err()
+			return component, component.Err()
 		}
 	}
 	component = populateGeneratedFields(component)
 	if component.Err() != nil {
-		return component.Err()
+		return component, component.Err()
 	}
 
-	// Apply changes to component
-	err = stack.UpdateComponent(componentId, component)
-	if err != nil {
-		return err
-	}
-
-	return nil
+	return component, nil
 }
 
 func populateGeneratedFields(value cue.Value) cue.Value {

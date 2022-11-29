@@ -77,12 +77,16 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 	bar := progressbar.Default(int64(total), "🏭 Transforming stack")
 	defer bar.Finish()
 	for _, componentId := range orderedTasks {
+		component, err := stack.GetComponent(componentId)
+		if err != nil {
+			return err
+		}
 		for _, flow := range sb.Flows {
-			err := flow.Run(stack, componentId)
+			component, err = flow.Run(stack, componentId, component)
 			if err != nil {
 				return err
 			}
-			if !stack.HasConcreteResourceDrivers(componentId) {
+			if !stack.HasConcreteResourceDrivers(component) {
 				return fmt.Errorf(
 					"Component %s resources do not have concrete drivers",
 					componentId,
@@ -90,7 +94,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 			}
 			bar.Add(len(flow.pipeline))
 		}
-		if !stack.IsConcreteComponent(componentId) {
+		if !stack.IsConcreteComponent(component) {
 			// find all errors
 			errors := []string{}
 			c, _ := stack.GetComponent(componentId)
@@ -108,6 +112,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 
 			return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
 		}
+		stack.UpdateComponent(componentId, component)
 	}
 	return nil
 }
