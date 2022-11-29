@@ -199,3 +199,7 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 		return nil
 	}), nil
 }
+
+func (s *Stack) GetComponents() cue.Value {
+    return s.components
+}

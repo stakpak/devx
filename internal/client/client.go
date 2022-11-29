@@ -11,7 +11,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
 	fmt.Printf("🏗️  Loading stack...\n")
 	value := utils.LoadProject(configDir)
 	fmt.Printf("👀 Validating stack...\n")
@@ -40,12 +40,17 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	if err != nil {
 		return err
 	}
+  
+  if dryRun {
+    fmt.Println(stack.GetComponents())
+    return nil
+  }
 
-    for id, driver := range drivers.NewDriversMap(environment) {
-        if err := driver.ApplyAll(stack); err != nil {
-            return fmt.Errorf("error running %s driver: %s", id, err)
-        }
+  for id, driver := range drivers.NewDriversMap(environment) {
+    if err := driver.ApplyAll(stack); err != nil {
+      return fmt.Errorf("error running %s driver: %s", id, err)
     }
+  }
 
 	return nil
 }

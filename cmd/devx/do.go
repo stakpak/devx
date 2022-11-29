@@ -13,7 +13,7 @@ var doCmd = &cobra.Command{
 	Short: "do DevX magic for the specified environment",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := client.Run(args[0], configDir, stackPath, buildersPath); err != nil {
+		if err := client.Run(args[0], configDir, stackPath, buildersPath, dryRun); err != nil {
 			return fmt.Errorf(errors.Details(err, nil))
 		}
 		return nil
