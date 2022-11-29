@@ -33,6 +33,7 @@ _#Container: {
 
 	containers: [string]: _#Container
 	containers: default:  _#Container
+	restart: "onfail" | "never" | *"always"
 }
 
 // a component that can be horizontally scaled

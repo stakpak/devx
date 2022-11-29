@@ -5,7 +5,14 @@ import (
 	"guku.io/devx/v1/traits"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+_#KubernetesResource: {
+	$metadata: labels: driver: "kubernetes"
+	metadata?: metav1.#ObjectMeta
+	...
+}
 
 _#DeploymentResource: {
 	appsv1.#Deployment
@@ -30,6 +37,7 @@ _#ServiceResource: {
 	v1.#Component
 	traits.#Workload
 	$metadata:  _
+	restart:    _
 	containers: _
 
 	appName:            string | *$metadata.id
@@ -54,6 +62,11 @@ _#ServiceResource: {
 							runAsGroup: 1099
 							fsGroup:    1099
 						}
+						restartPolicy: [
+								if restart == "always" {"Always"},
+								if restart == "onfail" {"OnFailure"},
+								if restart == "never" {"Never"},
+						][0]
 						"containers": [
 							for k, container in containers {
 								{
@@ -130,10 +143,8 @@ _#ServiceResource: {
 	replicas:  _
 
 	appName: string | *$metadata.id
-	$resources: {
-		"\(appName)-deployment": _#DeploymentResource & {
-			spec: "replicas": replicas.min
-		}
+	$resources: "\(appName)-deployment": _#DeploymentResource & {
+		spec: "replicas": replicas.min
 	}
 }
 
@@ -144,10 +155,8 @@ _#ServiceResource: {
 	podLabels: [string]: string
 
 	appName: string | *$metadata.id
-	$resources: {
-		"\(appName)-deployment": _#DeploymentResource & {
-			spec: template: metadata: labels: podLabels
-		}
+	$resources: "\(appName)-deployment": _#DeploymentResource & {
+		spec: template: metadata: labels: podLabels
 	}
 }
 
@@ -158,9 +167,19 @@ _#ServiceResource: {
 	podAnnotations: [string]: string
 
 	appName: string | *$metadata.id
-	$resources: {
-		"\(appName)-deployment": _#DeploymentResource & {
-			spec: template: metadata: annotations: podAnnotations
+	$resources: "\(appName)-deployment": _#DeploymentResource & {
+		spec: template: metadata: annotations: podAnnotations
+	}
+}
+
+#AddNamespace: v1.#Transformer & {
+	v1.#Component
+	namespace: string
+
+	$resources: [_]: _#KubernetesResource & {
+		$metadata: _
+		if $metadata.labels.driver == "kubernetes" {
+			metadata: "namespace": namespace
 		}
 	}
 }

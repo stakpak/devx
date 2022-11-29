@@ -22,6 +22,7 @@ _#ComposeResource: {
 		environment?: [string]: string
 		command?: [...string]
 		volumes?: [...string]
+		restart: string
 	}
 }
 
@@ -29,6 +30,7 @@ _#ComposeResource: {
 #AddComposeService: v1.#Transformer & {
 	v1.#Component
 	traits.#Workload
+	restart:    _
 	containers: _
 	$metadata:  _
 	$dependencies: [...string]
@@ -41,6 +43,11 @@ _#ComposeResource: {
 					containers.default.command,
 					containers.default.args,
 			])
+			"restart": [
+					if restart == "always" {"always"},
+					if restart == "onfail" {"on-failure"},
+					if restart == "never" {"no"},
+			][0]
 			volumes: [
 				for m in containers.default.mounts {
 					_mapping: [
@@ -122,6 +129,7 @@ _#ComposeResource: {
 				POSTGRES_DB:       database
 			}
 			depends_on: $dependencies
+			restart:    "no"
 		}
 		if persistent {
 			volumes: "pg-data": null
