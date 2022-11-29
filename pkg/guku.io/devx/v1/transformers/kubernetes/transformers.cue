@@ -204,6 +204,18 @@ _#ServiceResource: {
 	}
 }
 
+#AddLabels: v1.#Transformer & {
+	v1.#Component
+	labels: [string]: string
+
+	$resources: [_]: _#KubernetesResource & {
+		$metadata: _
+		if $metadata.labels.driver == "kubernetes" {
+			metadata: "labels": labels
+		}
+	}
+}
+
 #AddPodTolerations: v1.#Transformer & {
 	v1.#Component
 	traits.#Workload
