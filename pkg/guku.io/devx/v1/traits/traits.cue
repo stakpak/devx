@@ -75,7 +75,6 @@ _#VolumeSpec: {
 	$metadata: traits: Volume: null
 
 	volumes: [string]: _#VolumeSpec
-	volumes: default:  _#VolumeSpec
 }
 
 // a postgres database
