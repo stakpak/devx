@@ -10,7 +10,7 @@ Guku DevX is a tool for building developer-centric interfaces for your internal 
 ➜ devx project init
 ➜ devx project update
 ➜ devx project gen
-➜ devx do dev
+➜ devx build dev
 🏭 Transforming stack for the "dev" environment...
 [compose] applied resources to "build/dev/compose/docker-compose.yml"
 [terraform] applied resources to "build/dev/terraform/generated.tf.json"
