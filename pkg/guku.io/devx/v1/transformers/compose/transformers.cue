@@ -53,6 +53,7 @@ _#ComposeResource: {
 					_mapping: [
 							if m.volume.local != _|_ {"\(m.volume.local):\(m.path)"},
 							if m.volume.persistent != _|_ {"\(m.volume.persistent):\(m.path)"},
+							if m.volume.ephemeral != _|_ {"\(m.volume.ephemeral):\(m.path)"},
 					][0]
 					_suffix: [
 							if m.readOnly {":ro"},
@@ -73,9 +74,13 @@ _#ComposeResource: {
 	$dependencies: [...string]
 	$resources: compose: _#ComposeResource & {
 		for k, v in volumes {
-			// only persistent volumes supported in compose
 			if v.persistent != _|_ {
 				volumes: "\(v.persistent)": null
+			}
+
+			// support ephemeral for data sharing
+			if v.ephemeral != _|_ {
+				volumes: "\(v.ephemeral)": null
 			}
 		}
 	}
