@@ -19,6 +19,11 @@ _#DeploymentResource: {
 	$metadata: labels: driver: "kubernetes"
 	kind:       "Deployment"
 	apiVersion: "apps/v1"
+	spec: template: spec: securityContext: {
+		runAsUser:  uint | *10000
+		runAsGroup: uint | *10000
+		fsGroup:    uint | *10000
+	}
 }
 _#ServiceAccountResource: {
 	corev1.#ServiceAccount
@@ -57,15 +62,10 @@ _#ServiceResource: {
 					}
 					spec: {
 						"serviceAccountName": serviceAccountName
-						securityContext: {
-							runAsUser:  1099
-							runAsGroup: 1099
-							fsGroup:    1099
-						}
-						restartPolicy: [
-								if restart == "always" {"Always"},
-								if restart == "onfail" {"OnFailure"},
-								if restart == "never" {"Never"},
+						restartPolicy:        [
+									if restart == "always" {"Always"},
+									if restart == "onfail" {"OnFailure"},
+									if restart == "never" {"Never"},
 						][0]
 						"containers": [
 							for k, container in containers {
@@ -131,6 +131,7 @@ _#ServiceResource: {
 					}
 				},
 			]
+			type: string | *"ClusterIP"
 		}
 	}
 }
@@ -181,5 +182,31 @@ _#ServiceResource: {
 		if $metadata.labels.driver == "kubernetes" {
 			metadata: "namespace": namespace
 		}
+	}
+}
+
+#AddPodTolerations: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+	$metadata: _
+
+	podTolerations: [...corev1.#Toleration]
+
+	appName: string | *$metadata.id
+	$resources: "\(appName)-deployment": _#DeploymentResource & {
+		spec: template: spec: tolerations: podTolerations
+	}
+}
+
+#AddPodSecurityContext: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+	$metadata: _
+
+	podSecurityContext: corev1.#PodSecurityContext
+
+	appName: string | *$metadata.id
+	$resources: "\(appName)-deployment": _#DeploymentResource & {
+		spec: template: spec: securityContext: podSecurityContext
 	}
 }
