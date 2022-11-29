@@ -1,6 +1,7 @@
 package kubernetes
 
 import (
+	"strings"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 	appsv1 "k8s.io/api/apps/v1"
@@ -9,14 +10,26 @@ import (
 )
 
 _#KubernetesResource: {
-	$metadata: labels: driver: "kubernetes"
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   strings.HasPrefix("k8s.io/")
+	}
 	metadata?: metav1.#ObjectMeta
 	...
 }
-
+_#WorkloadResource: {
+	_#KubernetesResource
+	spec: {
+		template: corev1.#PodTemplateSpec
+		...
+	}
+}
 _#DeploymentResource: {
 	appsv1.#Deployment
-	$metadata: labels: driver: "kubernetes"
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   "k8s.io/apps/v1/deployment"
+	}
 	kind:       "Deployment"
 	apiVersion: "apps/v1"
 	spec: template: spec: securityContext: {
@@ -27,13 +40,19 @@ _#DeploymentResource: {
 }
 _#ServiceAccountResource: {
 	corev1.#ServiceAccount
-	$metadata: labels: driver: "kubernetes"
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   "k8s.io/core/v1/serviceaccount"
+	}
 	kind:       "ServiceAccount"
 	apiVersion: "v1"
 }
 _#ServiceResource: {
 	corev1.#Service
-	$metadata: labels: driver: "kubernetes"
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   "k8s.io/core/v1/service"
+	}
 	kind:       "Service"
 	apiVersion: "v1"
 }
@@ -208,5 +227,48 @@ _#ServiceResource: {
 	appName: string | *$metadata.id
 	$resources: "\(appName)-deployment": _#DeploymentResource & {
 		spec: template: spec: securityContext: podSecurityContext
+	}
+}
+
+#AddWorkloadVolumes: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+	traits.#Volume
+
+	volumes:    _
+	containers: _
+
+	$resources: [_]: {
+		$metadata: _
+		if $metadata.labels.type == "k8s.io/apps/v1/deployment" || $metadata.labels.type == "k8s.io/apps/v1/statefulset" {
+			_#WorkloadResource & {
+				spec: template: spec: {
+					"volumes": [
+						for _, volume in volumes {
+							// we support only ephemetal volumes for the time being
+							if volume.ephemeral != _|_ {
+								{
+									name: volume.ephemeral
+									emptyDir: {}
+								}
+							}
+						},
+					]
+					"containers": [
+						for _, container in containers {
+							volumeMounts: [
+								for mount in container.mounts {
+									{
+										name:      mount.volume.ephemeral
+										mountPath: mount.path
+										readOnly:  mount.readOnly
+									}
+								},
+							]
+						},
+					]
+				}
+			}
+		}
 	}
 }
