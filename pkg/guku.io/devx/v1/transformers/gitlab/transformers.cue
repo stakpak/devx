@@ -6,7 +6,7 @@ import (
 )
 
 _#PipelineResource: {
-	#GitlabCISpec
+	_#GitlabCISpec
 	$metadata: labels: {
 		driver: "gitlab"
 		type:   ""
@@ -17,7 +17,7 @@ _#PipelineResource: {
 	v1.#Component
 	traits.#Workflow
 	$metadata: _
-	plan:      #GitlabCISpec
+	plan:      _#GitlabCISpec
 
 	$resources: "\($metadata.id)-gitlab": _#PipelineResource & {
 		plan

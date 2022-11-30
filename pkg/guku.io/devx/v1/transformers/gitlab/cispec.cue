@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-#GitlabCISpec: {
+_#GitlabCISpec: {
 	@jsonschema(schema="http://json-schema.org/draft-07/schema#")
 	@jsonschema(id="https://gitlab.com/.gitlab-ci.yml")
 	$schema?:       string

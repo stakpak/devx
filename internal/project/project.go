@@ -98,8 +98,6 @@ func Discover(configDir string, showDefs bool, showTransformers bool) error {
 
 			fmt.Printf("[🏭 transformers] \"%s\"\n", dep.ID())
 			for fieldIter.Next() {
-				transformer := fieldIter.Value().LookupPath(cue.ParsePath("$metadata.transformer"))
-
 				required := ""
 
 				traits := fieldIter.Value().LookupPath(cue.ParsePath("input.$metadata.traits"))
@@ -110,19 +108,17 @@ func Discover(configDir string, showDefs bool, showTransformers bool) error {
 					}
 				}
 
-				if transformer.Exists() && transformer.IsConcrete() {
-					fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
-					if utils.HasComments(fieldIter.Value()) {
-						fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
-					}
-					if len(required) > 0 {
-						fmt.Printf(" (requires%s)", required)
-					}
+				fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
+				if utils.HasComments(fieldIter.Value()) {
+					fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
+				}
+				if len(required) > 0 {
+					fmt.Printf(" (requires%s)", required)
+				}
+				fmt.Println()
+				if showDefs {
+					fmt.Println(fieldIter.Value())
 					fmt.Println()
-					if showDefs {
-						fmt.Println(fieldIter.Value())
-						fmt.Println()
-					}
 				}
 			}
 			fmt.Println()
