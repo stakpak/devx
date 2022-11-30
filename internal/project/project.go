@@ -232,10 +232,17 @@ func Update(configDir string) error {
 			return err
 		}
 
-		pkgDir := path.Join(configDir, "cue.mod", repoPath)
-		err = os.RemoveAll(pkgDir)
+		packageInfo, err := (*mfs).ReadDir(repoPath)
 		if err != nil {
 			return err
+		}
+
+		for _, info := range packageInfo {
+			pkgDir := path.Join(configDir, "cue.mod", repoPath, info.Name())
+			err = os.RemoveAll(pkgDir)
+			if err != nil {
+				return err
+			}
 		}
 
 		err = utils.FsWalk(*mfs, repoPath, func(file string, content []byte) error {
