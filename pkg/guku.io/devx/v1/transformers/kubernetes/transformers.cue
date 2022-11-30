@@ -9,16 +9,16 @@ import (
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
-_#KubernetesResource: {
-	$metadata: labels: {
-		driver: "kubernetes"
-		type:   strings.HasPrefix("k8s.io/")
-	}
+_#KubernetesMeta: {
 	metadata?: metav1.#ObjectMeta
 	...
 }
 _#WorkloadResource: {
-	_#KubernetesResource
+	_#KubernetesMeta
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   strings.HasPrefix("k8s.io/")
+	}
 	spec: {
 		template: corev1.#PodTemplateSpec
 		...
@@ -196,9 +196,10 @@ _#ServiceResource: {
 	v1.#Component
 	namespace: string
 
-	$resources: [_]: _#KubernetesResource & {
+	$resources: [_]: {
 		$metadata: _
 		if $metadata.labels.driver == "kubernetes" {
+			_#KubernetesMeta
 			metadata: "namespace": namespace
 		}
 	}
@@ -208,9 +209,10 @@ _#ServiceResource: {
 	v1.#Component
 	labels: [string]: string
 
-	$resources: [_]: _#KubernetesResource & {
+	$resources: [_]: {
 		$metadata: _
 		if $metadata.labels.driver == "kubernetes" {
+			_#KubernetesMeta
 			metadata: "labels": labels
 		}
 	}
