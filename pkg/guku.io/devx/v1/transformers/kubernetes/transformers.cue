@@ -286,3 +286,26 @@ _#ServiceResource: {
 		}
 	}
 }
+
+#AddWorkloadProbes: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+
+	livenessProbe:  corev1.#Probe
+	readinessProbe: corev1.#Probe
+
+	containers: _
+	$resources: [_]: {
+		$metadata: _
+		if $metadata.labels.type == "k8s.io/apps/v1/deployment" || $metadata.labels.type == "k8s.io/apps/v1/statefulset" {
+			_#WorkloadResource & {
+				spec: template: spec: "containers": [
+					for _, container in containers {
+						"livenessProbe":  livenessProbe
+						"readinessProbe": readinessProbe
+					},
+				]
+			}
+		}
+	}
+}
