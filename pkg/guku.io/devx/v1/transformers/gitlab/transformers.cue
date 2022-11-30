@@ -7,7 +7,10 @@ import (
 
 _#PipelineResource: {
 	#GitlabCISpec
-	$metadata: labels: driver: "gitlab"
+	$metadata: labels: {
+		driver: "gitlab"
+		type:   ""
+	}
 }
 
 #AddCIPipeline: v1.#Transformer & {

@@ -27,6 +27,7 @@ import "list"
 	$resources: [string]: {
 		$metadata: labels: [string]: string
 		$metadata: labels: driver:   string
+		$metadata: labels: type:     string
 		...
 	}
 }

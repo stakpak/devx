@@ -7,15 +7,18 @@ import (
 )
 
 _#TerraformResource: {
-	$metadata: labels: driver: "terraform"
+	$metadata: labels: {
+		driver: "terraform"
+		type:   string
+	}
 }
 
 // add a helm release
 #AddHelmRelease: v1.#Transformer & {
-	$dependencies: [...string]
-	$metadata: _
 	v1.#Component
 	traits.#Helm
+	$dependencies: [...string]
+	$metadata: _
 	namespace: string
 	url:       _
 	chart:     _
@@ -23,6 +26,7 @@ _#TerraformResource: {
 	values:    _
 	$resources: terraform: {
 		_#TerraformResource
+		"$metadata": labels: type: "helm_release"
 		resource: helm_release: "\($metadata.id)": {
 			name:             $metadata.id
 			"namespace":      namespace

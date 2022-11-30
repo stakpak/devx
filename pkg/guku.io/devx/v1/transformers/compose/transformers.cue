@@ -7,7 +7,10 @@ import (
 )
 
 _#ComposeResource: {
-	$metadata: labels: driver: "compose"
+	$metadata: labels: {
+		driver: "compose"
+		type:   ""
+	}
 
 	version: string | *"3"
 	volumes: [string]: null

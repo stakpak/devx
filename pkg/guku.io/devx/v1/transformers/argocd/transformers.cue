@@ -8,8 +8,13 @@ import (
 )
 
 _#ArgoCDApplicationResource: {
-	$metadata: labels: driver: "kubernetes"
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   "argoproj.io/v1alpha1/application"
+	}
 	argoapp.#Application
+	apiVersion: "argoproj.io/v1alpha1"
+	kind:       "Application"
 	spec: project: string | *"default"
 }
 
@@ -24,10 +29,7 @@ _#ArgoCDApplicationResource: {
 	url:       _
 	version:   _
 	values:    _
-	$resources: "\($metadata.id)": {
-		_#ArgoCDApplicationResource
-		kind:       "Application"
-		apiVersion: "argoproj.io/v1alpha1"
+	$resources: "\($metadata.id)": _#ArgoCDApplicationResource & {
 		metadata: {
 			name:        $metadata.id
 			"namespace": namespace

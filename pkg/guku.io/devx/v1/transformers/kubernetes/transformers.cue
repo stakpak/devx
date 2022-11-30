@@ -1,7 +1,6 @@
 package kubernetes
 
 import (
-	"strings"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 	appsv1 "k8s.io/api/apps/v1"
@@ -17,7 +16,7 @@ _#WorkloadResource: {
 	_#KubernetesMeta
 	$metadata: labels: {
 		driver: "kubernetes"
-		type:   strings.HasPrefix("k8s.io/")
+		type:   string
 	}
 	spec: {
 		template: corev1.#PodTemplateSpec
