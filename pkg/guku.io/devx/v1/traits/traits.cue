@@ -117,3 +117,9 @@ _#HelmCommon: {
 	$metadata: traits: HelmOCI: null
 	_#HelmCommon
 }
+
+// an automation workflow
+#Workflow: v1.#Trait & {
+	$metadata: traits: Workflow: null
+	plan: _
+}
