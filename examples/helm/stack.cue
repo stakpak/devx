@@ -8,7 +8,6 @@ import (
 stack: v1.#Stack & {
 	components: {
 		cowsay: {
-			v1.#Component
 			traits.#Helm
 			url:       "guku.io"
 			chart:     "guku"
