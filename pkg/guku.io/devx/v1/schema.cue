@@ -3,6 +3,7 @@ package v1
 import "list"
 
 #Trait: {
+	#Component
 	$metadata: traits: [string]: _ | *null
 	...
 }

@@ -8,12 +8,10 @@ import (
 stack: v1.#Stack & {
 	components: {
 		sharedvol: {
-			v1.#Component
 			traits.#Volume
 			volumes: default: persistent: "bazo"
 		}
 		cowsay: {
-			v1.#Component
 			traits.#Workload
 			containers: default: {
 				image: "docker/whalesay"
@@ -29,7 +27,6 @@ stack: v1.#Stack & {
 			}
 		}
 		cowsayagain: {
-			v1.#Component
 			traits.#Workload
 			containers: default: {
 				image: "docker/whalesay"
