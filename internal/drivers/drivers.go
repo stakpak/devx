@@ -27,5 +27,8 @@ func NewDriversMap(environment string) map[string]Driver {
 		"gitlab": &GitlabDriver{
 			Path: path.Join("build", environment, "gitlab"),
 		},
+		"github": &GitHubDriver{
+			Path: path.Join("build", environment, "github"),
+		},
 	}
 }
