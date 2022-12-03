@@ -1,7 +1,10 @@
 package stackbuilder
 
 import (
+	"errors"
+	"fmt"
 	"os"
+	"path/filepath"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
@@ -114,9 +117,29 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
 			valueToFill := ""
 
-			env, found, _ := gukuAttr.Lookup(0, "env")
+			filePath, found, _ := gukuAttr.Lookup(0, "file")
 			if found {
-				valueToFill = os.Getenv(env)
+				filePath, err := verifyPath(filePath)
+				if err != nil {
+					fmt.Printf("\nPath error %s\n", err)
+					return true
+				}
+				content, err := os.ReadFile(filePath)
+				if err != nil {
+					fmt.Printf("\nFile error %s\n", err)
+					return true
+				}
+				valueToFill = string(content)
+			}
+
+			env, found, _ := gukuAttr.Lookup(0, "env")
+			if found && valueToFill == "" {
+				content, found := os.LookupEnv(env)
+				if !found {
+					fmt.Printf("\nEnvironment variable %s not set\n", env)
+					return true
+				}
+				valueToFill = content
 			}
 
 			isGenerated, _ := gukuAttr.Flag(0, "generate")
@@ -141,4 +164,13 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 	}
 
 	return value
+}
+
+func verifyPath(path string) (string, error) {
+	c := filepath.Clean(path)
+	r, err := filepath.EvalSymlinks(c)
+	if err != nil {
+		return c, errors.New("Unsafe or invalid path specified")
+	}
+	return r, nil
 }
