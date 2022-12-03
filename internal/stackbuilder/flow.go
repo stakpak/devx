@@ -1,6 +1,8 @@
 package stackbuilder
 
 import (
+	"os"
+
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
@@ -106,20 +108,33 @@ func (f *Flow) Run(stack *stack.Stack, componentId string, component cue.Value) 
 
 func populateGeneratedFields(value cue.Value) cue.Value {
 	pathsToFill := []cue.Path{}
+	valuesToFill := []string{}
 	utils.Walk(value, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 		if !v.IsConcrete() && gukuAttr.Err() == nil {
+			valueToFill := ""
+
+			env, found, _ := gukuAttr.Lookup(0, "env")
+			if found {
+				valueToFill = os.Getenv(env)
+			}
+
 			isGenerated, _ := gukuAttr.Flag(0, "generate")
-			if isGenerated {
+			if isGenerated && valueToFill == "" {
+				valueToFill = "dummy"
+			}
+
+			if valueToFill != "" {
 				selectors := v.Path().Selectors()
 				pathsToFill = append(pathsToFill, cue.MakePath(selectors[3:]...))
+				valuesToFill = append(valuesToFill, valueToFill)
 			}
 		}
 		return true
 	}, nil)
 
-	for _, path := range pathsToFill {
-		value = value.FillPath(path, "dummy")
+	for i, path := range pathsToFill {
+		value = value.FillPath(path, valuesToFill[i])
 		if value.Err() != nil {
 			return value
 		}
