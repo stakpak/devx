@@ -35,6 +35,8 @@ import "list"
 
 #StackBuilder: {
 	[string]: {
+		drivers?: ["terraform" | "kubernetes" | "gitlab" | "github" | "compose"]: output: string
+
 		// we might not use this at all in V1
 		additionalComponents?: [Id=string]: #Component & {
 			$metadata: id: Id

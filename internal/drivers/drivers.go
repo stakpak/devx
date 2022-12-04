@@ -13,22 +13,58 @@ type Driver interface {
 }
 
 // TODO we need to decompose this into DI pattern
-func NewDriversMap(environment string) map[string]Driver {
+func NewDriversMap(environment string, config map[string]map[string]string) map[string]Driver {
+
+	composePath := path.Join("build", environment, "compose")
+	if composeConfig, ok := config["compose"]; ok {
+		if output, ok := composeConfig["output"]; ok {
+			composePath = output
+		}
+	}
+
+	terraformPath := path.Join("build", environment, "terraform")
+	if terraformConfig, ok := config["terraform"]; ok {
+		if output, ok := terraformConfig["output"]; ok {
+			terraformPath = output
+		}
+	}
+
+	kubernetesPath := path.Join("build", environment, "kubernetes")
+	if kubernetesConfig, ok := config["kubernetes"]; ok {
+		if output, ok := kubernetesConfig["output"]; ok {
+			kubernetesPath = output
+		}
+	}
+
+	gitlabPath := path.Join("build", environment, "gitlab")
+	if gitlabConfig, ok := config["gitlab"]; ok {
+		if output, ok := gitlabConfig["output"]; ok {
+			gitlabPath = output
+		}
+	}
+
+	githubPath := path.Join("build", environment, "github")
+	if githubConfig, ok := config["github"]; ok {
+		if output, ok := githubConfig["output"]; ok {
+			githubPath = output
+		}
+	}
+
 	return map[string]Driver{
 		"compose": &ComposeDriver{
-			Path: path.Join("build", environment, "compose"),
+			Path: composePath,
 		},
 		"terraform": &TerraformDriver{
-			Path: path.Join("build", environment, "terraform"),
+			Path: terraformPath,
 		},
 		"kubernetes": &KubernetesDriver{
-			Path: path.Join("build", environment, "kubernetes"),
+			Path: kubernetesPath,
 		},
 		"gitlab": &GitlabDriver{
-			Path: path.Join("build", environment, "gitlab"),
+			Path: gitlabPath,
 		},
 		"github": &GitHubDriver{
-			Path: path.Join("build", environment, "github"),
+			Path: githubPath,
 		},
 	}
 }

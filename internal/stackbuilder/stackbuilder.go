@@ -13,6 +13,7 @@ import (
 type Environments = map[string]*StackBuilder
 
 type StackBuilder struct {
+	DriverConfig         map[string]map[string]string
 	AdditionalComponents *cue.Value
 	Flows                []*Flow
 }
@@ -48,7 +49,31 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 		additionalComponents = &additionalComponentsValue
 	}
 
+	driverConfig := make(map[string]map[string]string)
+	driverConfigValue := value.LookupPath(cue.ParsePath("drivers"))
+	if driverConfigValue.Exists() {
+		driverIter, err := driverConfigValue.Fields()
+		if err != nil {
+			return nil, err
+		}
+		for driverIter.Next() {
+			driverConfig[driverIter.Label()] = make(map[string]string)
+			configIter, err := driverIter.Value().Fields()
+			if err != nil {
+				return nil, err
+			}
+			for configIter.Next() {
+				value, err := configIter.Value().String()
+				if err != nil {
+					return nil, err
+				}
+				driverConfig[driverIter.Label()][configIter.Label()] = value
+			}
+		}
+	}
+
 	stackBuilder := StackBuilder{
+		DriverConfig:         driverConfig,
 		AdditionalComponents: additionalComponents,
 		Flows:                make([]*Flow, 0),
 	}

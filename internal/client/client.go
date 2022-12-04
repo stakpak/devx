@@ -40,17 +40,17 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	if err != nil {
 		return err
 	}
-  
-  if dryRun {
-    fmt.Println(stack.GetComponents())
-    return nil
-  }
 
-  for id, driver := range drivers.NewDriversMap(environment) {
-    if err := driver.ApplyAll(stack); err != nil {
-      return fmt.Errorf("error running %s driver: %s", id, err)
-    }
-  }
+	if dryRun {
+		fmt.Println(stack.GetComponents())
+		return nil
+	}
+
+	for id, driver := range drivers.NewDriversMap(environment, builder.DriverConfig) {
+		if err := driver.ApplyAll(stack); err != nil {
+			return fmt.Errorf("error running %s driver: %s", id, err)
+		}
+	}
 
 	return nil
 }
