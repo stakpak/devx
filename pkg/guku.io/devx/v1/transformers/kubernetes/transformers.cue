@@ -1,12 +1,15 @@
 package kubernetes
 
 import (
+	"list"
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/traits"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
+
+WorkloadTypes: ["k8s.io/apps/v1/deployment", "k8s.io/apps/v1/statefulset"]
 
 _#KubernetesMeta: {
 	metadata?: metav1.#ObjectMeta
@@ -161,9 +164,12 @@ _#ServiceResource: {
 	$metadata: _
 	replicas:  _
 
-	appName: string | *$metadata.id
-	$resources: "\(appName)-deployment": _#DeploymentResource & {
-		spec: "replicas": replicas.min
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
+			_#WorkloadResource & {
+				spec: "replicas": replicas.min
+			}
+		}
 	}
 }
 
@@ -173,9 +179,12 @@ _#ServiceResource: {
 	$metadata: _
 	podLabels: [string]: string
 
-	appName: string | *$metadata.id
-	$resources: "\(appName)-deployment": _#DeploymentResource & {
-		spec: template: metadata: labels: podLabels
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
+			_#WorkloadResource & {
+				spec: template: metadata: labels: podLabels
+			}
+		}
 	}
 }
 
@@ -185,9 +194,12 @@ _#ServiceResource: {
 	$metadata: _
 	podAnnotations: [string]: string
 
-	appName: string | *$metadata.id
-	$resources: "\(appName)-deployment": _#DeploymentResource & {
-		spec: template: metadata: annotations: podAnnotations
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
+			_#WorkloadResource & {
+				spec: template: metadata: annotations: podAnnotations
+			}
+		}
 	}
 }
 
@@ -195,9 +207,8 @@ _#ServiceResource: {
 	v1.#Component
 	namespace: string
 
-	$resources: [_]: {
-		$metadata: _
-		if $metadata.labels.driver == "kubernetes" {
+	$resources: [_]: this={
+		if this.$metadata.labels.driver == "kubernetes" {
 			_#KubernetesMeta
 			metadata: "namespace": namespace
 		}
@@ -208,9 +219,8 @@ _#ServiceResource: {
 	v1.#Component
 	labels: [string]: string
 
-	$resources: [_]: {
-		$metadata: _
-		if $metadata.labels.driver == "kubernetes" {
+	$resources: [_]: this={
+		if this.$metadata.labels.driver == "kubernetes" {
 			_#KubernetesMeta
 			metadata: "labels": labels
 		}
@@ -224,9 +234,12 @@ _#ServiceResource: {
 
 	podTolerations: [...corev1.#Toleration]
 
-	appName: string | *$metadata.id
-	$resources: "\(appName)-deployment": _#DeploymentResource & {
-		spec: template: spec: tolerations: podTolerations
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
+			_#WorkloadResource & {
+				spec: template: spec: tolerations: podTolerations
+			}
+		}
 	}
 }
 
@@ -237,9 +250,12 @@ _#ServiceResource: {
 
 	podSecurityContext: corev1.#PodSecurityContext
 
-	appName: string | *$metadata.id
-	$resources: "\(appName)-deployment": _#DeploymentResource & {
-		spec: template: spec: securityContext: podSecurityContext
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
+			_#WorkloadResource & {
+				spec: template: spec: securityContext: podSecurityContext
+			}
+		}
 	}
 }
 
@@ -251,9 +267,8 @@ _#ServiceResource: {
 	volumes:    _
 	containers: _
 
-	$resources: [_]: {
-		$metadata: _
-		if $metadata.labels.type == "k8s.io/apps/v1/deployment" || $metadata.labels.type == "k8s.io/apps/v1/statefulset" {
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
 			_#WorkloadResource & {
 				spec: template: spec: {
 					"volumes": [
@@ -294,9 +309,8 @@ _#ServiceResource: {
 	readinessProbe: corev1.#Probe
 
 	containers: _
-	$resources: [_]: {
-		$metadata: _
-		if $metadata.labels.type == "k8s.io/apps/v1/deployment" || $metadata.labels.type == "k8s.io/apps/v1/statefulset" {
+	$resources: [_]: this={
+		if list.Contains(WorkloadTypes, this.$metadata.labels.type) {
 			_#WorkloadResource & {
 				spec: template: spec: "containers": [
 					for _, container in containers {
