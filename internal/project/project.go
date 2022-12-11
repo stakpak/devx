@@ -22,7 +22,12 @@ import (
 )
 
 func Validate(configDir string, stackPath string) error {
-	value := utils.LoadProject(configDir)
+	overlays, err := utils.GetOverlays(configDir)
+	if err != nil {
+		return err
+	}
+
+	value := utils.LoadProject(configDir, &overlays)
 	if err := ValidateProject(value, stackPath); err != nil {
 		return err
 	}

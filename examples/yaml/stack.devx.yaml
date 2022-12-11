@@ -1,0 +1,40 @@
+#devx:import v1 "guku.io/devx/v1"
+#devx:import traits "guku.io/devx/v1/traits"
+
+#devx:merge v1.#Stack
+stack:
+  components:
+    #devx:merge traits.#Workload
+    #devx:merge traits.#Exposable
+    cowsay:
+      endpoints:
+        default:
+          ports:
+            - port: 8000
+            - port: 9000
+      containers:
+        default:
+          image: "docker/whalesay"
+          command: ["cowsay"]
+          env:
+            #devx:expr
+            DB_HOST: db.host
+            #devx:expr
+            ENV_GEN: string  @guku(generate)
+    #devx:merge traits.#Postgres
+    db:
+      version: "9.8"
+
+builders:
+  prod:
+    additionalComponents:
+      cowsay:
+        containers:
+          default:
+            args: ["Hello prod", "again"]
+  dev:
+    additionalComponents:
+      cowsay:
+        containers:
+          default:
+            args: ["Hello dev"]

@@ -13,10 +13,14 @@ import (
 
 func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
 	fmt.Printf("🏗️  Loading stack...\n")
-	value := utils.LoadProject(configDir)
-	fmt.Printf("👀 Validating stack...\n")
+	overlays, err := utils.GetOverlays(configDir)
+	if err != nil {
+		return err
+	}
+	value := utils.LoadProject(configDir, &overlays)
 
-	err := project.ValidateProject(value, stackPath)
+	fmt.Printf("👀 Validating stack...\n")
+	err = project.ValidateProject(value, stackPath)
 	if err != nil {
 		return err
 	}
