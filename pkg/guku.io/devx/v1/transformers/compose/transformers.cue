@@ -41,8 +41,10 @@ _#ComposeResource: {
 		services: "\($metadata.id)": {
 			image:       containers.default.image
 			environment: containers.default.env
-			depends_on:  $dependencies
-			command:     list.Concat([
+			depends_on: [
+				for id in $dependencies if services[id] != _|_ {id},
+			]
+			command: list.Concat([
 					containers.default.command,
 					containers.default.args,
 			])
@@ -136,8 +138,10 @@ _#ComposeResource: {
 				POSTGRES_PASSWORD: password
 				POSTGRES_DB:       database
 			}
-			depends_on: $dependencies
-			restart:    "no"
+			depends_on: [
+				for id in $dependencies if services[id] != _|_ {id},
+			]
+			restart: "no"
 		}
 		if persistent {
 			volumes: "pg-data": null
