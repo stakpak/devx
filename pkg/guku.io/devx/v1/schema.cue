@@ -2,6 +2,12 @@ package v1
 
 import "list"
 
+#Secret: {
+	$metadata: secret: null
+	name:     string
+	version?: string
+}
+
 #Trait: {
 	#Component
 	$metadata: traits: [string]: _ | *null

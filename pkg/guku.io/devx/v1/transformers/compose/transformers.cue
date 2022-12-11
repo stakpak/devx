@@ -39,8 +39,22 @@ _#ComposeResource: {
 	$dependencies: [...string]
 	$resources: compose: _#ComposeResource & {
 		services: "\($metadata.id)": {
-			image:       containers.default.image
-			environment: containers.default.env
+			image: containers.default.image
+			environment: {
+				for key, value in containers.default.env {
+					"\(key)": {
+						if (value & string) != _|_ {
+							value
+						}
+						if (value & v1.#Secret) != _|_ {
+							[
+								if value.version == _|_ {"SECRET[\(value.name)]"},
+								if value.version != _|_ {"SECRET[\(value.name):\(value.version)]"},
+							][0]
+						}
+					}
+				}
+			}
 			depends_on: [
 				for id in $dependencies if services[id] != _|_ {id},
 			]

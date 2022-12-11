@@ -9,7 +9,7 @@ _#Container: {
 	image: string @guku(required)
 	command: [...string]
 	args: [...string]
-	env: [string]: string
+	env: [string]: string | v1.#Secret
 	mounts: [...{
 		volume:   _#VolumeSpec
 		path:     string
@@ -68,6 +68,8 @@ _#VolumeSpec: {
 	ephemeral: string
 } | {
 	persistent: string
+} | {
+	secret: v1.#Secret
 }
 
 // a component that has a volume
@@ -122,4 +124,11 @@ _#HelmCommon: {
 #Workflow: v1.#Trait & {
 	$metadata: traits: Workflow: null
 	plan: _
+}
+
+// a component that has secrets
+#Secret: v1.#Trait & {
+	$metadata: traits: Secret: null
+
+	secrets: [string]: v1.#Secret
 }
