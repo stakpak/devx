@@ -62,14 +62,27 @@ _#Endpoint: {
 	endpoints: default:  _#Endpoint
 }
 
+// work around ambiguous disjunctions by disallowing fields
 _#VolumeSpec: {
-	local: string
+	local:       string
+	secret?:     _|_
+	ephemeral?:  _|_
+	persistent?: _|_
 } | {
-	ephemeral: string
+	ephemeral:   string
+	local?:      _|_
+	secret?:     _|_
+	persistent?: _|_
 } | {
 	persistent: string
+	ephemeral?: _|_
+	local?:     _|_
+	secret?:    _|_
 } | {
-	secret: v1.#Secret
+	secret:      v1.#Secret
+	ephemeral?:  _|_
+	local?:      _|_
+	persistent?: _|_
 }
 
 // a component that has a volume
