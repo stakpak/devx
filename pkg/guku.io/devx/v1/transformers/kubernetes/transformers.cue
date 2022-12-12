@@ -11,6 +11,7 @@ import (
 
 WorkloadTypes: ["k8s.io/apps/v1/deployment", "k8s.io/apps/v1/statefulset"]
 
+_#KubernetesName: =~"^[a-z0-9][-a-z0-9]{0,251}[a-z0-9]?$"
 _#KubernetesMeta: {
 	metadata?: metav1.#ObjectMeta
 	...
@@ -34,6 +35,7 @@ _#DeploymentResource: {
 	}
 	kind:       "Deployment"
 	apiVersion: "apps/v1"
+	metadata: name: _#KubernetesName
 	spec: template: spec: securityContext: {
 		runAsUser:  uint | *10000
 		runAsGroup: uint | *10000
@@ -48,6 +50,7 @@ _#ServiceAccountResource: {
 	}
 	kind:       "ServiceAccount"
 	apiVersion: "v1"
+	metadata: name: _#KubernetesName
 }
 _#ServiceResource: {
 	corev1.#Service
@@ -57,6 +60,7 @@ _#ServiceResource: {
 	}
 	kind:       "Service"
 	apiVersion: "v1"
+	metadata: name: _#KubernetesName
 }
 
 #AddDeployment: v1.#Transformer & {
@@ -97,9 +101,26 @@ _#ServiceResource: {
 									args:    container.args
 									env: [
 										for name, value in container.env {
-											{
-												"name":  name
-												"value": value
+											if (value & string) != _|_ {
+												{
+													"name":  name
+													"value": value
+												}
+											}
+											if (value & v1.#Secret) != _|_ {
+												{
+													"name": name
+													valueFrom: secretKeyRef: {
+														"name": value.name & _#KubernetesName
+														if value.property == _|_ {
+															"key": name
+														}
+														if value.property != _|_ {
+															"key": value.property
+														}
+														optional: false
+													}
+												}
 											}
 										},
 									]
@@ -273,11 +294,19 @@ _#ServiceResource: {
 				spec: template: spec: {
 					"volumes": [
 						for _, volume in volumes {
-							// we support only ephemetal volumes for the time being
 							if volume.ephemeral != _|_ {
 								{
 									name: volume.ephemeral
 									emptyDir: {}
+								}
+							}
+							if volume.secret != _|_ {
+								{
+									name: volume.secret.name
+									secret: {
+										secretName: volume.secret.name
+										optional:   false
+									}
 								}
 							}
 						},
@@ -287,7 +316,12 @@ _#ServiceResource: {
 							volumeMounts: [
 								for mount in container.mounts {
 									{
-										name:      mount.volume.ephemeral
+										if mount.volume.ephemeral != _|_ {
+											name: mount.volume.ephemeral
+										}
+										if mount.volume.secret != _|_ {
+											name: mount.volume.secret.name
+										}
 										mountPath: mount.path
 										readOnly:  mount.readOnly
 									}
