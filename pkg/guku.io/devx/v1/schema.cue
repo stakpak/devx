@@ -4,8 +4,10 @@ import "list"
 
 #Secret: {
 	$metadata: secret: null
-	name:     string
-	version?: string
+	name:      string
+	key:       string | *name
+	version?:  string
+	property?: string
 }
 
 #Trait: {
