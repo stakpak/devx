@@ -33,3 +33,4 @@ brews:
       owner: devopzilla
       name: homebrew-guku-devx
       branch: main
+      token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
