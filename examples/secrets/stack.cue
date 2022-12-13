@@ -22,11 +22,13 @@ stack: v1.#Stack & {
 				command: ["cowsay"]
 				args: ["Hello DevX!"]
 				env: {
+					// you can use secrets directly in an env var
 					API_KEY:   commonSecrets.secrets.apiKey
 					SOMETHING: "bla"
 				}
 				mounts: [
 					{
+						// or you can mount secrets as files via volumes
 						volume: volumes.default
 						path:   "secrets/file"
 					},
