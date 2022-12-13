@@ -27,3 +27,9 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+brews:
+  - homepage: "https://devx.guku.io/"
+    tap:
+      owner: devopzilla
+      name: homebrew-guku-devx
+      branch: main
