@@ -7,6 +7,19 @@ Guku DevX is a tool for building developer-centric interfaces for your internal 
 **Developer-centric configurations using a single config for all envrionments, for all vendors!**
 ![alt text](https://devx.guku.io/assets/images/image02.png)
 
+## Installation
+
+### Homebrew
+```bash
+brew tap devopzilla/guku-devx
+brew install guku-devx       
+```
+
+### Download the binary
+
+[Releases page](https://github.com/devopzilla/guku-devx/releases)
+
+
 ## Quick start
 ```bash
 ➜ devx project init
