@@ -1,4 +1,4 @@
-package terraform
+package helm
 
 import (
 	"encoding/yaml"
