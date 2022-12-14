@@ -748,9 +748,11 @@ _#GitHubCISpec: {
 		// Must contain either `uses` or `run`
 		steps?: [...(*{
 			uses: string
+			run?: _|_
 			...
 		} | {
-			run: string
+			run:   string
+			uses?: _|_
 			...
 		}) & {
 			// A unique identifier for the step. You can use the id to
