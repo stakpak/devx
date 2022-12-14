@@ -183,7 +183,6 @@ func GetOverlays(configDir string) (map[string]string, error) {
 			}
 
 			overlays[f.Name()+".cue"] = BuildCUEFile("", &n)
-			fmt.Println(overlays[f.Name()+".cue"])
 		}
 	}
 
