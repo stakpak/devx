@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -181,105 +182,95 @@ func GetOverlays(configDir string) (map[string]string, error) {
 				return overlays, err
 			}
 
-			overlays[f.Name()+".cue"] = BuildCUEFile("package main", nil, &n)
+			overlays[f.Name()+".cue"] = BuildCUEFile("", &n)
+			fmt.Println(overlays[f.Name()+".cue"])
 		}
 	}
 
 	return overlays, nil
 }
 
-func BuildCUEFile(content string, meta *DevxMeta, n *yaml.Node) string {
+func BuildCUEFile(content string, n *yaml.Node) string {
 	newContent := content
-
-	if meta == nil {
-		meta = &DevxMeta{
-			isExpr:  false,
-			attrs:   []string{},
-			merge:   []string{},
-			imports: map[string]string{},
-		}
-	}
-	if n.HeadComment != "" {
-		for _, entry := range strings.Split(n.HeadComment, "\n") {
-			setDirectives(meta, entry)
-		}
-	}
-	// if n.LineComment != "" {
-	// 	setDirectives(value.meta, n.LineComment)
-	// }
 
 	switch n.Kind {
 	case yaml.DocumentNode:
-		for alias, importPath := range meta.imports {
-			newContent = fmt.Sprintf("%s\nimport %s %s", newContent, alias, importPath)
-		}
-		newContent += "\n"
+		newContent += "package main\n"
 		for _, child := range n.Content {
-			newContent = BuildCUEFile(newContent, nil, child)
+			newContent = BuildCUEFile(newContent, child)
 		}
 	case yaml.SequenceNode:
 		newContent = fmt.Sprintf("%s [\n", newContent)
 		for _, child := range n.Content {
-			newContent = fmt.Sprintf("%s,\n", BuildCUEFile(newContent, nil, child))
+			newContent = fmt.Sprintf("%s,\n", BuildCUEFile(newContent, child))
 		}
 		newContent = fmt.Sprintf("%s\n]\n", newContent)
 	case yaml.MappingNode:
-		newContent = fmt.Sprintf("%s {\n", newContent)
-		for _, item := range meta.merge {
-			newContent = fmt.Sprintf("%s\n%s\n", newContent, item)
-		}
+		addBrace := false
 		for i := 0; i < len(n.Content); i += 2 {
 			name := n.Content[i].Value
-			childMeta := &DevxMeta{
-				isExpr:  false,
-				attrs:   []string{},
-				merge:   []string{},
-				imports: map[string]string{},
-			}
-			if n.Content[i].HeadComment != "" {
-				for _, entry := range strings.Split(n.Content[i].HeadComment, "\n") {
-					setDirectives(childMeta, entry)
+
+			if name == "import" && newContent == "package main\n" {
+				for j := 0; j < len(n.Content[i+1].Content); j += 2 {
+					newContent = fmt.Sprintf(
+						"%simport %s \"%s\"\n",
+						newContent,
+						n.Content[i+1].Content[j].Value,
+						n.Content[i+1].Content[j+1].Value,
+					)
 				}
+				continue
+			}
+
+			if name == "$schema" {
+				schmaValues := []string{}
+				for _, child := range n.Content[i+1].Content {
+					schmaValues = append(schmaValues, child.Value)
+				}
+				schema := strings.Join(schmaValues, " & ")
+				if !addBrace {
+					newContent = fmt.Sprintf("%s%s & {\n", newContent, schema)
+					addBrace = true
+				}
+				continue
+			}
+
+			if name == "$traits" {
+				if !addBrace {
+					newContent = fmt.Sprintf("%s {\n", newContent)
+					addBrace = true
+				}
+				for _, child := range n.Content[i+1].Content {
+					newContent = fmt.Sprintf("%s%s\n", newContent, child.Value)
+				}
+				continue
+			}
+
+			if !addBrace {
+				newContent = fmt.Sprintf("%s {\n", newContent)
+				addBrace = true
 			}
 
 			child := n.Content[i+1]
 			newContent = fmt.Sprintf("%s%s: ", newContent, name)
-			newContent = fmt.Sprintf("%s\n", BuildCUEFile(newContent, childMeta, child))
+			newContent = fmt.Sprintf("%s\n", BuildCUEFile(newContent, child))
 		}
 		newContent = fmt.Sprintf("%s\n}\n", newContent)
 	case yaml.ScalarNode:
-		if meta.isExpr || n.Tag != "!!str" {
-			return fmt.Sprintf("%s%s", newContent, n.Value)
+		matched, _ := regexp.MatchString(`^\$\{.*\}$`, n.Value)
+		value := n.Value
+
+		if matched {
+			value = n.Value[2 : len(n.Value)-1]
+		}
+
+		if matched || n.Tag != "!!str" {
+			return fmt.Sprintf("%s%s", newContent, value)
 		} else {
 			return fmt.Sprintf("%s\"%s\"", newContent, n.Value)
+
 		}
 	}
 
 	return newContent
-}
-
-type DevxMeta struct {
-	attrs   []string
-	merge   []string
-	imports map[string]string
-	isExpr  bool
-}
-
-func setDirectives(meta *DevxMeta, entry string) {
-	trimmed := strings.TrimPrefix(entry, "#")
-	trimmed = strings.TrimSpace(trimmed)
-
-	if strings.HasPrefix(trimmed, "devx:expr") {
-		meta.isExpr = true
-	} else if strings.HasPrefix(trimmed, "devx:attr") {
-		_, attr, _ := strings.Cut(trimmed, "devx:attr")
-		meta.attrs = append(meta.attrs, strings.TrimSpace(attr))
-	} else if strings.HasPrefix(trimmed, "devx:merge") {
-		_, trait, _ := strings.Cut(trimmed, "devx:merge")
-		meta.merge = append(meta.merge, strings.TrimSpace(trait))
-	} else if strings.HasPrefix(trimmed, "devx:import") {
-		_, imports, _ := strings.Cut(trimmed, "devx:import")
-		importPair := strings.Split(strings.TrimSpace(imports), " ")
-		meta.imports[importPair[0]] = importPair[1]
-	}
 }
