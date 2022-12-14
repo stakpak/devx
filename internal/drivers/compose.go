@@ -13,6 +13,7 @@ import (
 
 type ComposeDriver struct {
 	Path string
+	File string
 }
 
 func (d *ComposeDriver) match(resource cue.Value) bool {
@@ -50,7 +51,7 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 		return err
 	}
 
-	composeFilePath := path.Join(d.Path, "docker-compose.yml")
+	composeFilePath := path.Join(d.Path, d.File)
 	if _, err := os.Stat(d.Path); os.IsNotExist(err) {
 		os.MkdirAll(d.Path, 0700)
 	}

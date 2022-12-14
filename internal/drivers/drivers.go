@@ -2,6 +2,7 @@ package drivers
 
 import (
 	"path"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
@@ -16,9 +17,14 @@ type Driver interface {
 func NewDriversMap(environment string, config map[string]map[string]string) map[string]Driver {
 
 	composePath := path.Join("build", environment, "compose")
+	composeFile := "docker-compose.yml"
 	if composeConfig, ok := config["compose"]; ok {
 		if output, ok := composeConfig["output"]; ok {
-			composePath = output
+			if strings.HasSuffix(output, ".yml") || strings.HasSuffix(output, ".yaml") {
+				composePath, composeFile = path.Split(output)
+			} else {
+				composePath = output
+			}
 		}
 	}
 
@@ -53,6 +59,7 @@ func NewDriversMap(environment string, config map[string]map[string]string) map[
 	return map[string]Driver{
 		"compose": &ComposeDriver{
 			Path: composePath,
+			File: composeFile,
 		},
 		"terraform": &TerraformDriver{
 			Path: terraformPath,
