@@ -43,9 +43,14 @@ func NewDriversMap(environment string, config map[string]map[string]string) map[
 	}
 
 	gitlabPath := path.Join("build", environment, "gitlab")
+	gitlabFile := ".gitlab-ci.yml"
 	if gitlabConfig, ok := config["gitlab"]; ok {
 		if output, ok := gitlabConfig["output"]; ok {
-			gitlabPath = output
+			if strings.HasSuffix(output, ".yml") || strings.HasSuffix(output, ".yaml") {
+				gitlabPath, gitlabFile = path.Split(output)
+			} else {
+				gitlabPath = output
+			}
 		}
 	}
 
@@ -69,6 +74,7 @@ func NewDriversMap(environment string, config map[string]map[string]string) map[
 		},
 		"gitlab": &GitlabDriver{
 			Path: gitlabPath,
+			File: gitlabFile,
 		},
 		"github": &GitHubDriver{
 			Path: githubPath,

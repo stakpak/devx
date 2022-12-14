@@ -13,6 +13,7 @@ import (
 
 type GitlabDriver struct {
 	Path string
+	File string
 }
 
 func (d *GitlabDriver) match(resource cue.Value) bool {
@@ -21,15 +22,12 @@ func (d *GitlabDriver) match(resource cue.Value) bool {
 }
 
 func (d *GitlabDriver) ApplyAll(stack *stack.Stack) error {
-	foundResources := false
-
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
 
 		resourceIter, _ := component.LookupPath(cue.ParsePath("$resources")).Fields()
 		for resourceIter.Next() {
 			if d.match(resourceIter.Value()) {
-				foundResources = true
 				resource, err := utils.RemoveMeta(resourceIter.Value())
 				if err != nil {
 					return err
@@ -40,21 +38,16 @@ func (d *GitlabDriver) ApplyAll(stack *stack.Stack) error {
 					return err
 				}
 
-				fileName := fmt.Sprintf("%s-gitlab-ci.yml", resourceIter.Label())
-				resourceFilePath := path.Join(d.Path, fileName)
+				resourceFilePath := path.Join(d.Path, d.File)
 				if _, err := os.Stat(d.Path); os.IsNotExist(err) {
 					os.MkdirAll(d.Path, 0700)
 				}
 				os.WriteFile(resourceFilePath, data, 0700)
+
+				fmt.Printf("[gitlab] applied a resource to \"%s\"\n", resourceFilePath)
 			}
 		}
 	}
-
-	if !foundResources {
-		return nil
-	}
-
-	fmt.Printf("[gitlab] applied resources to \"%s/*-gitlab-ci.yml\"\n", d.Path)
 
 	return nil
 }
