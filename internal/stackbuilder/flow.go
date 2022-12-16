@@ -50,7 +50,7 @@ func (f *Flow) Match(component cue.Value) bool {
 	// Check matches
 	matchIter, _ := f.match.Fields()
 	for matchIter.Next() {
-		fieldName := utils.GetLastPathFragement(matchIter.Value())
+		fieldName := utils.GetLastPathFragment(matchIter.Value())
 		componentField := metadata.LookupPath(cue.ParsePath(fieldName))
 
 		if !componentField.Exists() {
@@ -66,12 +66,12 @@ func (f *Flow) Match(component cue.Value) bool {
 	// Check excludes
 	excludeIter, _ := f.exclude.Fields()
 	for excludeIter.Next() {
-		fieldName := utils.GetLastPathFragement(excludeIter.Value())
+		fieldName := utils.GetLastPathFragment(excludeIter.Value())
 		componentField := metadata.LookupPath(cue.ParsePath(fieldName))
 
 		excludedSubfieldsIter, _ := excludeIter.Value().Fields()
 		for excludedSubfieldsIter.Next() {
-			excludedSubfieldName := utils.GetLastPathFragement(excludedSubfieldsIter.Value())
+			excludedSubfieldName := utils.GetLastPathFragment(excludedSubfieldsIter.Value())
 			componentSubfield := componentField.LookupPath(cue.ParsePath(excludedSubfieldName))
 
 			if componentSubfield.Exists() && componentSubfield.Equals(excludedSubfieldsIter.Value()) {
