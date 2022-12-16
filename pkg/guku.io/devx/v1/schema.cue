@@ -79,3 +79,16 @@ import "list"
 		match: traits: t.$metadata.traits
 	}
 }
+
+#TestCase: {
+	$metadata: test: string
+
+	description: string | ""
+
+	transformer: #Transformer
+	input:       #Component
+	output:      input & transformer
+
+	expect: output
+	assert: [string]: true
+}
