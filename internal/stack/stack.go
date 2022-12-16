@@ -39,11 +39,11 @@ func NewStack(value cue.Value) (*Stack, error) {
 
 	tasks := flow.Tasks()
 	for _, task := range tasks {
-		id := utils.GetLastPathFragement(task.Value())
+		id := utils.GetLastPathFragment(task.Value())
 		parents := task.Dependencies()
 		stack.dependencies[id] = make([]string, 0)
 		for _, parent := range parents {
-			parentId := utils.GetLastPathFragement(parent.Value())
+			parentId := utils.GetLastPathFragment(parent.Value())
 			stack.addDependency(id, parentId)
 		}
 	}
@@ -127,11 +127,11 @@ func (s *Stack) AddComponents(value cue.Value) {
 
 	tasks := flow.Tasks()
 	for _, task := range tasks {
-		id := utils.GetLastPathFragement(task.Value())
+		id := utils.GetLastPathFragment(task.Value())
 		parents := task.Dependencies()
 		s.dependencies[id] = make([]string, 0)
 		for _, parent := range parents {
-			parentId := utils.GetLastPathFragement(parent.Value())
+			parentId := utils.GetLastPathFragment(parent.Value())
 			s.addDependency(id, parentId)
 		}
 	}

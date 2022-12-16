@@ -7,7 +7,7 @@ import (
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
-	progressbar "github.com/schollz/progressbar/v3"
+	"github.com/schollz/progressbar/v3"
 )
 
 type Environments = map[string]*StackBuilder
@@ -27,7 +27,7 @@ func NewEnvironments(value cue.Value) (Environments, error) {
 	}
 
 	for envIter.Next() {
-		name := utils.GetLastPathFragement(envIter.Value())
+		name := utils.GetLastPathFragment(envIter.Value())
 		environments[name], err = NewStackBuilder(envIter.Value())
 		if err != nil {
 			return environments, err
