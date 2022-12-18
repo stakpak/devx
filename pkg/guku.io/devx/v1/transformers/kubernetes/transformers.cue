@@ -6,6 +6,7 @@ import (
 	"guku.io/devx/v1/traits"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	autoscalingv2beta2 "k8s.io/api/autoscaling/v2beta2"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
@@ -60,6 +61,16 @@ _#ServiceResource: {
 	}
 	kind:       "Service"
 	apiVersion: "v1"
+	metadata: name: _#KubernetesName
+}
+_#HPAResource: {
+	autoscalingv2beta2.#HorizontalPodAutoscaler
+	$metadata: labels: {
+		driver: "kubernetes"
+		type:   "k8s.io/autoscaling/v2beta2/horizontalpodautoscaler"
+	}
+	kind:       "HorizontalPodAutoscaler"
+	apiVersion: "autoscaling/v2beta2"
 	metadata: name: _#KubernetesName
 }
 
@@ -190,6 +201,32 @@ _#ServiceResource: {
 			_#WorkloadResource & {
 				spec: "replicas": replicas.min
 			}
+		}
+	}
+}
+
+#AddHPA: v1.#Transformer & {
+	v1.#Component
+	traits.#Workload
+	traits.#Replicable
+	$metadata: _
+	hpaMetrics: [...autoscalingv2beta2.#MetricSpec]
+	replicas: _
+	appName:  string | *$metadata.id
+	$resources: "\(appName)-hpa": _#HPAResource & {
+		metadata: {
+			name: appName
+			labels: app: appName
+		}
+		spec: {
+			scaleTargetRef: {
+				name:       $resources["\(appName)-deployment"].metadata.name
+				kind:       $resources["\(appName)-deployment"].kind
+				apiVersion: $resources["\(appName)-deployment"].apiVersion
+			}
+			minReplicas: replicas.min
+			maxReplicas: replicas.max
+			metrics:     hpaMetrics
 		}
 	}
 }
