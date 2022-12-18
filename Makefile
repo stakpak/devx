@@ -5,7 +5,3 @@ build:
 .PHONY: test
 test:
 	@go test ./... --race --cover
-
-.PHONY: testcue
-testcue:
-	@cd test && cue eval

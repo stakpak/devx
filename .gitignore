@@ -2,3 +2,4 @@ experiments
 bin
 examples/cue.mod
 dist/
+cue.mod/pkg
