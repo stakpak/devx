@@ -3,7 +3,8 @@ package utils
 import (
 	"bufio"
 	"fmt"
-	"io/ioutil"
+	"io"
+	"os"
 	"path"
 	"path/filepath"
 	"regexp"
@@ -47,7 +48,7 @@ func LoadProject(configDir string, overlays *map[string]string) cue.Value {
 	return ctx.BuildInstance(instances[0])
 }
 
-func GetLastPathFragement(value cue.Value) string {
+func GetLastPathFragment(value cue.Value) string {
 	selector := value.Path().Selectors()
 	return selector[len(selector)-1].String()
 }
@@ -139,7 +140,7 @@ func FsWalk(fs billy.Filesystem, filePath string, process func(p string, content
 			return err
 		}
 
-		data, err := ioutil.ReadAll(bufio.NewReader(content))
+		data, err := io.ReadAll(bufio.NewReader(content))
 		if err != nil {
 			return err
 		}
@@ -164,14 +165,14 @@ func IsReference(value cue.Value) bool {
 func GetOverlays(configDir string) (map[string]string, error) {
 	overlays := map[string]string{}
 
-	files, err := ioutil.ReadDir(configDir)
+	files, err := os.ReadDir(configDir)
 	if err != nil {
 		return overlays, err
 	}
 
 	for _, f := range files {
 		if !f.IsDir() && (strings.HasSuffix(f.Name(), ".devx.yaml") || strings.HasSuffix(f.Name(), ".devx.yml")) {
-			file, err := ioutil.ReadFile(path.Join(configDir, f.Name()))
+			file, err := os.ReadFile(path.Join(configDir, f.Name()))
 			if err != nil {
 				return overlays, err
 			}
