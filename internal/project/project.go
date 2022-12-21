@@ -220,7 +220,7 @@ func Update(configDir string) error {
 			return err
 		}
 
-		log.Infof("Downloading %s @ %s", pkg, hash)
+		log.Infof("📦 Downloading %s @ %s", pkg, hash)
 
 		w, err := repo.Worktree()
 		if err != nil {
