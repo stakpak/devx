@@ -38,6 +38,7 @@ func init() {
 		buildCmd,
 		projectCmd,
 		versionCmd,
+		diffCmd,
 	)
 
 	projectCmd.AddCommand(
