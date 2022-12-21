@@ -8,6 +8,7 @@ import (
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
 	"github.com/schollz/progressbar/v3"
+	log "github.com/sirupsen/logrus"
 )
 
 type Environments = map[string]*StackBuilder
@@ -135,6 +136,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 				}
 			})
 
+			log.Debugln(component)
 			return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
 		}
 		stack.UpdateComponent(componentId, component)
