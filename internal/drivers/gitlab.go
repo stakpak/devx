@@ -1,7 +1,6 @@
 package drivers
 
 import (
-	"fmt"
 	"os"
 	"path"
 
@@ -9,6 +8,7 @@ import (
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type GitlabDriver struct {
@@ -44,7 +44,7 @@ func (d *GitlabDriver) ApplyAll(stack *stack.Stack) error {
 				}
 				os.WriteFile(resourceFilePath, data, 0700)
 
-				fmt.Printf("[gitlab] applied a resource to \"%s\"\n", resourceFilePath)
+				log.Infof("[gitlab] applied a resource to \"%s\"", resourceFilePath)
 			}
 		}
 	}

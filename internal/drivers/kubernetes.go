@@ -10,6 +10,7 @@ import (
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type KubernetesDriver struct {
@@ -75,7 +76,7 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 		return nil
 	}
 
-	fmt.Printf("[kubernetes] applied resources to \"%s/*.yml\"\n", d.Path)
+	log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Path)
 
 	return nil
 }

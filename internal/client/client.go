@@ -4,6 +4,8 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue"
+	log "github.com/sirupsen/logrus"
+
 	"devopzilla.com/guku/internal/drivers"
 	"devopzilla.com/guku/internal/project"
 	"devopzilla.com/guku/internal/stack"
@@ -12,14 +14,14 @@ import (
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
-	fmt.Printf("🏗️  Loading stack...\n")
+	log.Info("🏗️  Loading stack...")
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
 	}
 	value := utils.LoadProject(configDir, &overlays)
 
-	fmt.Printf("👀 Validating stack...\n")
+	log.Info("👀 Validating stack...")
 	err = project.ValidateProject(value, stackPath)
 	if err != nil {
 		return err
@@ -46,7 +48,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 
 	if dryRun {
-		fmt.Println(stack.GetComponents())
+		log.Info(stack.GetComponents())
 		return nil
 	}
 

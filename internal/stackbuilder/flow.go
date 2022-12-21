@@ -2,13 +2,13 @@ package stackbuilder
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type Flow struct {
@@ -121,12 +121,12 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 			if found {
 				filePath, err := verifyPath(filePath)
 				if err != nil {
-					fmt.Printf("\nPath error %s\n", err)
+					log.Errorf("\nPath error %s\n", err)
 					return true
 				}
 				content, err := os.ReadFile(filePath)
 				if err != nil {
-					fmt.Printf("\nFile error %s\n", err)
+					log.Errorf("\nFile error %s\n", err)
 					return true
 				}
 				valueToFill = string(content)
@@ -136,7 +136,7 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 			if found && valueToFill == "" {
 				content, found := os.LookupEnv(env)
 				if !found {
-					fmt.Printf("\nEnvironment variable %s not set\n", env)
+					log.Errorf("\nEnvironment variable %s not set\n", env)
 					return true
 				}
 				valueToFill = content

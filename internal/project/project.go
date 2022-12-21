@@ -19,6 +19,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
+	log "github.com/sirupsen/logrus"
 )
 
 func Validate(configDir string, stackPath string) error {
@@ -32,7 +33,7 @@ func Validate(configDir string, stackPath string) error {
 		return err
 	}
 
-	fmt.Println("👌 All looks good")
+	log.Info("👌 All looks good")
 	return nil
 }
 
@@ -78,22 +79,21 @@ func Discover(configDir string, showDefs bool, showTransformers bool) error {
 			value := ctx.BuildInstance(dep)
 
 			fieldIter, _ := value.Fields(cue.Definitions(true), cue.Docs(true))
-			fmt.Printf("[🏷️  traits] \"%s\"\n", dep.ID())
+			message := fmt.Sprintf("[🏷️  traits] \"%s\"\n", dep.ID())
 			for fieldIter.Next() {
 				traits := fieldIter.Value().LookupPath(cue.ParsePath("$metadata.traits"))
 				if traits.Exists() && traits.IsConcrete() {
-					fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
+					message += fmt.Sprintf("%s.%s", dep.PkgName, fieldIter.Selector().String())
 					if utils.HasComments(fieldIter.Value()) {
-						fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
+						message += fmt.Sprintf("\t%s", utils.GetComments(fieldIter.Value()))
 					}
-					fmt.Println()
+					message += "\n"
 					if showDefs {
-						fmt.Println(fieldIter.Value())
-						fmt.Println()
+						message += fmt.Sprintf("%s\n\n", fieldIter.Value())
 					}
 				}
 			}
-			fmt.Println()
+			log.Info(message)
 		}
 		if showTransformers && strings.Contains(dep.ID(), "transformers") {
 			ctx := cuecontext.New()
@@ -101,7 +101,7 @@ func Discover(configDir string, showDefs bool, showTransformers bool) error {
 
 			fieldIter, _ := value.Fields(cue.Definitions(true), cue.Docs(true))
 
-			fmt.Printf("[🏭 transformers] \"%s\"\n", dep.ID())
+			message := fmt.Sprintf("[🏭 transformers] \"%s\"\n", dep.ID())
 			for fieldIter.Next() {
 				required := ""
 
@@ -113,20 +113,19 @@ func Discover(configDir string, showDefs bool, showTransformers bool) error {
 					}
 				}
 
-				fmt.Printf("%s.%s", dep.PkgName, fieldIter.Selector().String())
+				message += fmt.Sprintf("%s.%s", dep.PkgName, fieldIter.Selector().String())
 				if utils.HasComments(fieldIter.Value()) {
-					fmt.Printf("\t%s", utils.GetComments(fieldIter.Value()))
+					message += fmt.Sprintf("\t%s", utils.GetComments(fieldIter.Value()))
 				}
 				if len(required) > 0 {
-					fmt.Printf(" (requires%s)", required)
+					message += fmt.Sprintf(" (requires%s)", required)
 				}
-				fmt.Println()
+				message += "\n"
 				if showDefs {
-					fmt.Println(fieldIter.Value())
-					fmt.Println()
+					message += fmt.Sprintf("%s\n\n", fieldIter.Value())
 				}
 			}
-			fmt.Println()
+			log.Info(message)
 		}
 	}
 
@@ -217,8 +216,11 @@ func Update(configDir string) error {
 		}
 
 		hash, err := repo.ResolveRevision(plumbing.Revision(repoRevision))
+		if err != nil {
+			return err
+		}
 
-		fmt.Printf("Downloading %s @ %s\n", pkg, hash)
+		log.Infof("Downloading %s @ %s\n", pkg, hash)
 
 		w, err := repo.Worktree()
 		if err != nil {

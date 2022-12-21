@@ -9,6 +9,7 @@ import (
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type GitHubDriver struct {
@@ -54,7 +55,7 @@ func (d *GitHubDriver) ApplyAll(stack *stack.Stack) error {
 		return nil
 	}
 
-	fmt.Printf("[github] applied resources to \"%s/*-github-workflow.yml\"\n", d.Path)
+	log.Infof("[github] applied resources to \"%s/*-github-workflow.yml\"", d.Path)
 
 	return nil
 }

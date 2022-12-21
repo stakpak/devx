@@ -2,13 +2,13 @@ package drivers
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"path"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type TerraformDriver struct {
@@ -56,7 +56,7 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	os.WriteFile(terraformFilePath, data, 0700)
 
-	fmt.Printf("[terraform] applied resources to \"%s\"\n", terraformFilePath)
+	log.Infof("[terraform] applied resources to \"%s\"", terraformFilePath)
 
 	return nil
 }

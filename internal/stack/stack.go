@@ -7,6 +7,7 @@ import (
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type Stack struct {
@@ -54,7 +55,7 @@ func NewStack(value cue.Value) (*Stack, error) {
 }
 
 func (s *Stack) Print() {
-	fmt.Println(s.components)
+	log.Info(s.components)
 }
 
 func (s *Stack) GetDependencies(id string) ([]string, error) {

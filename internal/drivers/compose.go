@@ -1,7 +1,6 @@
 package drivers
 
 import (
-	"fmt"
 	"os"
 	"path"
 
@@ -9,6 +8,7 @@ import (
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
+	log "github.com/sirupsen/logrus"
 )
 
 type ComposeDriver struct {
@@ -57,7 +57,7 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	os.WriteFile(composeFilePath, data, 0700)
 
-	fmt.Printf("[compose] applied resources to \"%s\"\n", composeFilePath)
+	log.Infof("[compose] applied resources to \"%s\"", composeFilePath)
 
 	return nil
 }
