@@ -8,6 +8,7 @@ import (
 	"path"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -273,4 +274,38 @@ func BuildCUEFile(content string, n *yaml.Node) string {
 	}
 
 	return newContent
+}
+
+type Leaf struct {
+	Path  string
+	Value string
+}
+
+func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
+	result := make([]Leaf, 0)
+
+	value.Walk(func(v cue.Value) bool {
+		switch v.Kind() {
+		case cue.BoolKind, cue.NumberKind, cue.StringKind, cue.BytesKind:
+			sel := v.Path().Selectors()
+			path := cue.MakePath(sel[2:]...).String()
+			if skipReserved && strings.Contains(path, "$") || strings.Contains(path, "$metadata") {
+				return true
+			}
+			result = append(
+				result,
+				Leaf{
+					Path:  path,
+					Value: fmt.Sprint(v),
+				},
+			)
+		}
+		return true
+	}, nil)
+
+	sort.SliceStable(result, func(i, j int) bool {
+		return strings.Compare(result[i].Path, result[j].Path) == -1
+	})
+
+	return result
 }
