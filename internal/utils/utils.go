@@ -19,6 +19,13 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type ContextKey string
+
+const (
+	ConfigDirKey ContextKey = "configDir"
+	DryRunKey    ContextKey = "dryRun"
+)
+
 func LoadInstances(configDir string) []*build.Instance {
 	buildConfig := &cueload.Config{
 		Dir:     configDir,

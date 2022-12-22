@@ -1,6 +1,7 @@
 package stackbuilder
 
 import (
+	"context"
 	"fmt"
 	"strings"
 
@@ -90,7 +91,7 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 	return &stackBuilder, nil
 }
 
-func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
+func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) error {
 	if sb.AdditionalComponents != nil {
 		stack.AddComponents(*sb.AdditionalComponents)
 	}
@@ -108,7 +109,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 			return err
 		}
 		for _, flow := range sb.Flows {
-			component, err = flow.Run(stack, componentId, component)
+			component, err = flow.Run(ctx, stack, componentId, component)
 			if err != nil {
 				return err
 			}

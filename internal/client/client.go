@@ -1,6 +1,7 @@
 package client
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -19,7 +20,11 @@ import (
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
-	stack, builder, err := buildStack(environment, configDir, stackPath, buildersPath)
+	ctx := context.Background()
+	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
+	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
+
+	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath)
 	if err != nil {
 		return err
 	}
@@ -75,13 +80,19 @@ func Diff(target string, environment string, configDir string, stackPath string,
 		return err
 	}
 
-	targetStack, _, err := buildStack(environment, targetDir, stackPath, buildersPath)
+	targetCtx := context.Background()
+	targetCtx = context.WithValue(targetCtx, utils.ConfigDirKey, targetDir)
+	targetCtx = context.WithValue(targetCtx, utils.DryRunKey, true)
+	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath)
 	if err != nil {
 		return err
 	}
 
 	log.Info("\n📍 Processing current stack")
-	currentStack, _, err := buildStack(environment, configDir, stackPath, buildersPath)
+	currentCtx := context.Background()
+	currentCtx = context.WithValue(currentCtx, utils.ConfigDirKey, configDir)
+	currentCtx = context.WithValue(currentCtx, utils.DryRunKey, true)
+	currentStack, _, err := buildStack(currentCtx, environment, configDir, stackPath, buildersPath)
 	if err != nil {
 		return err
 	}
@@ -129,7 +140,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	return nil
 }
 
-func buildStack(environment string, configDir string, stackPath string, buildersPath string) (*stack.Stack, *stackbuilder.StackBuilder, error) {
+func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string) (*stack.Stack, *stackbuilder.StackBuilder, error) {
 	log.Infof("🏗️  Loading stack...")
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
@@ -150,7 +161,7 @@ func buildStack(environment string, configDir string, stackPath string, builders
 
 	builder, ok := builders[environment]
 	if !ok {
-		return nil, nil, fmt.Errorf("Environment %s was not found", environment)
+		return nil, nil, fmt.Errorf("environment %s was not found", environment)
 	}
 
 	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)))
@@ -158,7 +169,7 @@ func buildStack(environment string, configDir string, stackPath string, builders
 		return nil, nil, err
 	}
 
-	err = builder.TransformStack(stack)
+	err = builder.TransformStack(ctx, stack)
 	if err != nil {
 		return nil, nil, err
 	}

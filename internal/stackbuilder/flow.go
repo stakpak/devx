@@ -1,9 +1,11 @@
 package stackbuilder
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
@@ -83,7 +85,7 @@ func (f *Flow) Match(component cue.Value) bool {
 	return true
 }
 
-func (f *Flow) Run(stack *stack.Stack, componentId string, component cue.Value) (cue.Value, error) {
+func (f *Flow) Run(ctx context.Context, stack *stack.Stack, componentId string, component cue.Value) (cue.Value, error) {
 	if !f.Match(component) {
 		return component, nil
 	}
@@ -101,7 +103,7 @@ func (f *Flow) Run(stack *stack.Stack, componentId string, component cue.Value) 
 			return component, component.Err()
 		}
 	}
-	component = populateGeneratedFields(component)
+	component = populateGeneratedFields(ctx, component)
 	if component.Err() != nil {
 		return component, component.Err()
 	}
@@ -109,7 +111,7 @@ func (f *Flow) Run(stack *stack.Stack, componentId string, component cue.Value) 
 	return component, nil
 }
 
-func populateGeneratedFields(value cue.Value) cue.Value {
+func populateGeneratedFields(ctx context.Context, value cue.Value) cue.Value {
 	pathsToFill := []cue.Path{}
 	valuesToFill := []string{}
 	utils.Walk(value, func(v cue.Value) bool {
@@ -119,6 +121,10 @@ func populateGeneratedFields(value cue.Value) cue.Value {
 
 			filePath, found, _ := gukuAttr.Lookup(0, "file")
 			if found {
+				if !strings.HasPrefix(filePath, "/") {
+					configDir := ctx.Value(utils.ConfigDirKey).(string)
+					filePath = filepath.Join(configDir, filePath)
+				}
 				filePath, err := verifyPath(filePath)
 				if err != nil {
 					log.Errorf("\nPath error %s\n", err)
