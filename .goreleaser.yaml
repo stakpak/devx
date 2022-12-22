@@ -34,3 +34,8 @@ brews:
       name: homebrew-guku-devx
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
+dockers:
+  - image_templates:
+      - "ghcr.io/devopzilla/guku-devx:latest"
+      - "ghcr.io/devopzilla/guku-devx:{{ .Tag }}"
+      - "ghcr.io/devopzilla/guku-devx:v{{ .Major }}.{{ .Minor }}"
