@@ -19,6 +19,10 @@ brew install guku-devx
 
 [Releases page](https://github.com/devopzilla/guku-devx/releases)
 
+### Docker image
+```bash
+docker run --rm -v "$(pwd):/app" ghcr.io/devopzilla/guku-devx:latest -h
+```
 
 ## Quick start
 ```bash
