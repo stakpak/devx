@@ -114,7 +114,7 @@ func (sb *StackBuilder) TransformStack(stack *stack.Stack) error {
 			}
 			if !stack.HasConcreteResourceDrivers(component) {
 				return fmt.Errorf(
-					"Component %s resources do not have concrete drivers",
+					"component %s resources do not have concrete drivers",
 					componentId,
 				)
 			}

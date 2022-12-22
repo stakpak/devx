@@ -1,7 +1,7 @@
 package stackbuilder
 
 import (
-	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -170,7 +170,7 @@ func verifyPath(path string) (string, error) {
 	c := filepath.Clean(path)
 	r, err := filepath.EvalSymlinks(c)
 	if err != nil {
-		return c, errors.New("Unsafe or invalid path specified")
+		return c, fmt.Errorf("unsafe or invalid path specified: %s", err)
 	}
 	return r, nil
 }
