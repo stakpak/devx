@@ -10,7 +10,7 @@ import (
 
 var buildCmd = &cobra.Command{
 	Use:     "build [environment]",
-	Short:   "build DevX magic for the specified environment",
+	Short:   "Build DevX magic for the specified environment",
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"do"},
 	RunE: func(cmd *cobra.Command, args []string) error {

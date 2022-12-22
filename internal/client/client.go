@@ -89,18 +89,21 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	currentValues := utils.GetLeaves(currentStack.GetComponents(), false)
 	targetValues := utils.GetLeaves(targetStack.GetComponents(), false)
 
+	remColor := color.New(color.FgRed)
+	addColor := color.New(color.FgGreen)
+	updColor := color.New(color.FgYellow)
 	log.Info("\n🔬 Diff")
 	ci, ti := 0, 0
 	for ci < len(currentValues) || ti < len(targetValues) {
 		if ci == len(currentValues) {
 			tv := targetValues[ti]
-			log.Infof("%s %s: %s", color.RedString("-"), tv.Path, tv.Value)
+			log.Info(remColor.Sprintf("\t%s %s: %s", "-", tv.Path, tv.Value))
 			ti++
 			continue
 		}
 		if ti == len(targetValues) {
 			cv := currentValues[ci]
-			log.Infof("%s %s: %s", color.GreenString("+"), cv.Path, cv.Value)
+			log.Info(addColor.Sprintf("\t%s %s: %s", "+", cv.Path, cv.Value))
 			ci++
 			continue
 		}
@@ -110,15 +113,15 @@ func Diff(target string, environment string, configDir string, stackPath string,
 		switch strings.Compare(cv.Path, tv.Path) {
 		case 0:
 			if strings.Compare(cv.Value, tv.Value) != 0 {
-				log.Infof("%s %s:  %s -> %s", color.YellowString("~"), cv.Path, tv.Value, cv.Value)
+				log.Info(updColor.Sprintf("\t%s %s: %s -> %s", "~", cv.Path, tv.Value, cv.Value))
 			}
 			ci++
 			ti++
 		case -1:
-			log.Infof("%s %s: %s", color.GreenString("+"), cv.Path, cv.Value)
+			log.Info(addColor.Sprintf("\t%s %s: %s", "+", cv.Path, cv.Value))
 			ci++
 		case 1:
-			log.Infof("%s %s: %s", color.RedString("-"), tv.Path, tv.Value)
+			log.Info(remColor.Sprintf("\t%s %s: %s", "-", tv.Path, tv.Value))
 			ti++
 		}
 	}
