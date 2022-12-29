@@ -3,13 +3,11 @@ package stackbuilder
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
 	"github.com/schollz/progressbar/v3"
-	log "github.com/sirupsen/logrus"
 )
 
 type Environments = map[string]*StackBuilder
@@ -79,7 +77,7 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 		AdditionalComponents: additionalComponents,
 		Flows:                make([]*Flow, 0),
 	}
-	flowIter, _ := flows.List()
+	flowIter, _ := flows.Fields()
 	for flowIter.Next() {
 		flow, err := NewFlow(flowIter.Value())
 		if err != nil {
@@ -121,25 +119,25 @@ func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) 
 			}
 			bar.Add(len(flow.pipeline))
 		}
-		if !stack.IsConcreteComponent(component) {
-			// find all errors
-			errors := []string{}
-			c, _ := stack.GetComponent(componentId)
+		// if !stack.IsConcreteComponent(component) {
+		// 	// find all errors
+		// 	errors := []string{}
+		// 	c, _ := stack.GetComponent(componentId)
 
-			c.Walk(func(_ cue.Value) bool { return true }, func(value cue.Value) {
-				if value.Err() != nil {
-					errors = append(errors, value.Err().Error())
-				}
+		// 	c.Walk(func(_ cue.Value) bool { return true }, func(value cue.Value) {
+		// 		if value.Err() != nil {
+		// 			errors = append(errors, value.Err().Error())
+		// 		}
 
-				err := value.Validate(cue.Concrete(true))
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s: %s", value.Path(), err.Error()))
-				}
-			})
+		// 		err := value.Validate(cue.Concrete(true))
+		// 		if err != nil {
+		// 			errors = append(errors, fmt.Sprintf("%s: %s", value.Path(), err.Error()))
+		// 		}
+		// 	})
 
-			log.Debugln(component)
-			return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
-		}
+		// 	log.Debugln(component)
+		// 	return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
+		// }
 		stack.UpdateComponent(componentId, component)
 	}
 	return nil
