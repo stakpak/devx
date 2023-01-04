@@ -16,6 +16,7 @@ var (
 	showTransformers bool
 	dryRun           bool
 	noColor          bool
+	telemetry        string
 )
 
 var version = "DEV"
@@ -27,6 +28,7 @@ type Version struct {
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVarP(&telemetry, "telemetry", "t", "", "telemetry endpoint")
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
 	rootCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
