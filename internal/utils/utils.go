@@ -34,7 +34,7 @@ func LoadInstances(configDir string) []*build.Instance {
 	return cueload.Instances([]string{}, buildConfig)
 }
 
-func LoadProject(configDir string, overlays *map[string]string) cue.Value {
+func LoadProject(configDir string, overlays *map[string]string) (cue.Value, string, []string) {
 	sourceOverlays := map[string]cueload.Source{}
 
 	if overlays != nil {
@@ -53,7 +53,7 @@ func LoadProject(configDir string, overlays *map[string]string) cue.Value {
 
 	ctx := cuecontext.New()
 
-	return ctx.BuildInstance(instances[0])
+	return ctx.BuildInstance(instances[0]), instances[0].ID(), instances[0].Deps
 }
 
 func GetLastPathFragment(value cue.Value) string {

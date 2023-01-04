@@ -19,7 +19,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
@@ -27,6 +27,13 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath)
 	if err != nil {
 		return err
+	}
+
+	if telemetry != "" {
+		err := stack.SendBuild(telemetry, environment)
+		if err != nil {
+			return err
+		}
 	}
 
 	if dryRun {
@@ -146,7 +153,7 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	if err != nil {
 		return nil, nil, err
 	}
-	value := utils.LoadProject(configDir, &overlays)
+	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
 
 	log.Info("👀 Validating stack...")
 	err = project.ValidateProject(value, stackPath)
@@ -164,7 +171,7 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 		return nil, nil, fmt.Errorf("environment %s was not found", environment)
 	}
 
-	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)))
+	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)), stackId, depIds)
 	if err != nil {
 		return nil, nil, err
 	}

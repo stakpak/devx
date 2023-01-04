@@ -28,7 +28,7 @@ func Validate(configDir string, stackPath string) error {
 		return err
 	}
 
-	value := utils.LoadProject(configDir, &overlays)
+	value, _, _ := utils.LoadProject(configDir, &overlays)
 	if err := ValidateProject(value, stackPath); err != nil {
 		return err
 	}
