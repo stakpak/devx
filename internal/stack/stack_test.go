@@ -30,7 +30,7 @@ func TestNew(t *testing.T) {
 	ctx := cuecontext.New()
 	value := ctx.CompileString(stackString1)
 
-	stack, err := NewStack(value)
+	stack, err := NewStack(value, "", []string{})
 	if err != nil {
 		t.Error(err)
 	}
@@ -82,7 +82,7 @@ func TestTaskOrder(t *testing.T) {
 	ctx := cuecontext.New()
 	value := ctx.CompileString(stackString)
 
-	stack, err := NewStack(value)
+	stack, err := NewStack(value, "", []string{})
 	if err != nil {
 		t.Error(err)
 	}

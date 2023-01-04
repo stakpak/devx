@@ -1,7 +1,13 @@
 package stack
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"net/url"
+	"path"
 	"sort"
 
 	"cuelang.org/go/cue"
@@ -11,18 +17,22 @@ import (
 )
 
 type Stack struct {
+	ID           string
+	DepIDs       []string
 	components   cue.Value
 	tasks        []string
 	dependencies map[string][]string
 }
 
-func NewStack(value cue.Value) (*Stack, error) {
+func NewStack(value cue.Value, stackId string, depIds []string) (*Stack, error) {
 	components := value.LookupPath(cue.ParsePath("components"))
 	if components.Err() != nil {
 		return nil, components.Err()
 	}
 
 	stack := &Stack{
+		ID:           stackId,
+		DepIDs:       depIds,
 		components:   components,
 		dependencies: make(map[string][]string),
 	}
@@ -202,4 +212,126 @@ func taskFunc(v cue.Value) (cueflow.Runner, error) {
 
 func (s *Stack) GetComponents() cue.Value {
 	return s.components
+}
+
+func (s *Stack) SendBuild(telemetryEndpoint string, environment string) error {
+	build := struct {
+		Stack        string                 `json:"stack"`
+		Identity     *string                `json:"identity"`
+		Branch       string                 `json:"branch"`
+		Result       cue.Value              `json:"result"`
+		Dependencies []string               `json:"dependencies"`
+		References   map[string][]Reference `json:"references"`
+		Environment  string                 `json:"environment"`
+		Commit       *string                `json:"commit"`
+	}{
+		Stack:        s.ID,
+		Branch:       "main",
+		Result:       s.GetComponents(),
+		Dependencies: s.DepIDs,
+		References:   s.GetReferences(),
+		Environment:  environment,
+	}
+	data, err := json.Marshal(build)
+	if err != nil {
+		return err
+	}
+	log.Debug("Stack ID: ", s.ID)
+
+	url, _ := url.Parse(telemetryEndpoint)
+	url.Path = path.Join(url.Path, "api", "builds")
+	log.Debug("URL: ", url)
+
+	request, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(data))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	log.Debug("Response Status: ", response.Status)
+	log.Debug("Response Headers: ", response.Header)
+	body, _ := ioutil.ReadAll(response.Body)
+	log.Debug("Response Body: ", string(body))
+
+	return nil
+}
+
+type Reference struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
+
+func (s *Stack) GetReferences() map[string][]Reference {
+	componentIter, _ := s.components.Fields()
+
+	refMap := map[string][]Reference{}
+	for componentIter.Next() {
+		refs := removeDuplicates(GetRef(componentIter.Value()))
+		if len(refs) > 0 {
+			refMap[componentIter.Label()] = refs
+		}
+	}
+
+	return refMap
+}
+
+func GetRef(v cue.Value) []Reference {
+	refs := []Reference{}
+
+	v.Walk(func(val cue.Value) bool {
+		op, vals := val.Expr()
+		switch op {
+		case cue.AndOp, cue.InterpolationOp:
+			for _, value := range vals {
+				refs = append(refs, GetRef(value)...)
+			}
+			return false
+		case cue.SelectorOp:
+			_, structPath := vals[0].ReferencePath()
+			if len(structPath.Selectors()) > 1 {
+				refs = append(refs, Reference{
+					Source: fmt.Sprintf("%s.%s", getPathSuffix(structPath), vals[1]),
+					Target: getPathSuffix(val.Path()),
+				})
+			}
+			return false
+		case cue.IndexOp:
+			_, structPath := vals[0].ReferencePath()
+			if len(structPath.Selectors()) > 1 {
+				refs = append(refs, Reference{
+					Source: fmt.Sprintf("%s[%s]", getPathSuffix(structPath), vals[1]),
+					Target: getPathSuffix(val.Path()),
+				})
+			}
+			return false
+		}
+		return true
+	}, nil)
+
+	return refs
+}
+
+func getPathSuffix(p cue.Path) string {
+	sel := p.Selectors()
+	return cue.MakePath(sel[2:]...).String()
+}
+
+func removeDuplicates(refs []Reference) []Reference {
+	allKeys := make(map[string]bool)
+	list := []Reference{}
+	for _, item := range refs {
+		key := fmt.Sprintf(item.Source, item.Target)
+		if _, value := allKeys[key]; !value {
+			allKeys[key] = true
+			list = append(list, item)
+		}
+	}
+	return list
 }
