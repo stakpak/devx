@@ -108,13 +108,13 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	for ci < len(currentValues) || ti < len(targetValues) {
 		if ci == len(currentValues) {
 			tv := targetValues[ti]
-			log.Infof("\t%s %s: %s", remColor.Sprintf("-"), tv.Path, tv.Value)
+			log.Infof("\t%s %s: %v", remColor.Sprintf("-"), tv.Path, tv.Value)
 			ti++
 			continue
 		}
 		if ti == len(targetValues) {
 			cv := currentValues[ci]
-			log.Infof("\t%s %s: %s", addColor.Sprintf("+"), cv.Path, cv.Value)
+			log.Infof("\t%s %s: %v", addColor.Sprintf("+"), cv.Path, cv.Value)
 			ci++
 			continue
 		}
@@ -123,7 +123,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 		tv := targetValues[ti]
 		switch strings.Compare(cv.Path, tv.Path) {
 		case 0:
-			if strings.Compare(cv.Value, tv.Value) != 0 {
+			if strings.Compare(fmt.Sprint(cv.Value), fmt.Sprint(tv.Value)) != 0 {
 				log.Infof("\t%s %s: %s -> %s", updColor.Sprintf("~"), cv.Path, tv.Value, cv.Value)
 			}
 			ci++
@@ -136,6 +136,128 @@ func Diff(target string, environment string, configDir string, stackPath string,
 			ti++
 		}
 	}
+
+	return nil
+}
+
+func dumpexpr(v cue.Value, level int) {
+	op, values := v.Expr()
+
+	switch op {
+	case cue.NoOp:
+		//fmt.Printf("%s└ %v\n", strings.Repeat(" ", level), v)
+	case cue.SelectorOp:
+		fmt.Printf("%s└─ %v\n", strings.Repeat(" ", level), cue.Dereference(v).Path())
+	case cue.AndOp, cue.OrOp, cue.InterpolationOp:
+		lastpath := ""
+
+		for _, value := range values {
+			if value.Path().String() != lastpath {
+				fmt.Printf("%s└─ %v\n", strings.Repeat(" ", level), value.Path())
+				lastpath = value.Path().String()
+			}
+
+			dumpexpr(value, level+2)
+		}
+	default:
+		fmt.Printf("%s└─ %v\n", strings.Repeat(" ", level), op)
+	}
+}
+
+func Lint(environment string, configDir string, stackPath string, buildersPath string) error {
+	ctx := context.Background()
+	stack, _, err := buildStack(ctx, environment, configDir, stackPath, buildersPath)
+	if err != nil {
+		return err
+	}
+
+	leaves := utils.GetLeaves(stack.GetComponents(), false)
+
+	for _, leave := range leaves {
+		if strings.Contains(leave.Path, "$resources") {
+			// resource
+			fmt.Printf("[R] %s\n", leave.Path)
+			dumpexpr(leave.Value, 1)
+		} else {
+			// component
+			fmt.Printf("[C] %s\n", leave.Path)
+			dumpexpr(leave.Value, 1)
+		}
+	}
+
+	return nil
+
+	resources := []string{}
+	components := []string{}
+
+	for _, leave := range leaves {
+		if !strings.Contains(leave.Path, "echo") {
+			continue
+		}
+
+		if strings.Contains(leave.Path, "$resources") {
+			refs := utils.GetReferences(leave.Value)
+
+			for _, ref := range refs {
+				if !strings.Contains(ref.Path().String(), "$resources") {
+					rpath := cue.MakePath(ref.Path().Selectors()[2:]...).String()
+					resources = append(resources, rpath)
+					//fmt.Printf("[R] %s -> %s\n", leave.Path, rpath)
+				}
+			}
+		} else {
+			components = append(components, leave.Path)
+		}
+	}
+
+	for _, resource := range resources {
+		fmt.Printf("[R] %s\n", resource)
+	}
+
+	for _, component := range components {
+		fmt.Printf("[C] %s\n", component)
+	}
+
+	/*
+		for _, leave := range leaves {
+			if strings.Contains(leave.Path, "$resources") {
+				refs := utils.GetReferences(leave.Value)
+
+				for _, ref := range refs {
+					if !strings.Contains(ref, "$resources") {
+						fmt.Printf("%s -> %s\n", leave.Path, ref)
+					}
+				}
+			}
+		}
+
+		return nil
+
+		components := map[string]cue.Value{}
+		resources := []utils.Leaf{}
+
+		for _, leave := range leaves {
+			path := leave.Path
+
+			if strings.Contains(path, "$resources") {
+				resources = append(resources, utils.Leaf{Path: path, Value: leave.Value})
+			} else {
+				components[path] = leave.Value
+			}
+
+		}
+
+		refs := []string{}
+
+		for _, resource := range resources {
+			refs = append(refs, utils.GetReferences(resource.Value)...)
+		}
+
+		for _, ref := range refs {
+			//fmt.Printf("\n---\n%#v\n", refs)
+			fmt.Println(ref)
+		}
+	*/
 
 	return nil
 }

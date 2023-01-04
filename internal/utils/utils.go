@@ -285,7 +285,7 @@ func BuildCUEFile(content string, n *yaml.Node) string {
 
 type Leaf struct {
 	Path  string
-	Value string
+	Value cue.Value
 }
 
 func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
@@ -303,7 +303,7 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 				result,
 				Leaf{
 					Path:  path,
-					Value: fmt.Sprint(v),
+					Value: v,
 				},
 			)
 		}
@@ -315,4 +315,40 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 	})
 
 	return result
+}
+
+func ValuesToPath(values []cue.Value) cue.Path {
+	selectors := []cue.Selector{}
+
+	for _, value := range values {
+		if sel, err := value.String(); err != nil {
+			panic(err) // TODO: Handle error
+		} else {
+			selectors = append(selectors, cue.Str(sel))
+		}
+	}
+
+	return cue.MakePath(selectors...)
+}
+
+func GetReferences(v cue.Value) []cue.Value {
+	refs := []cue.Value{}
+	op, values := v.Expr()
+
+	switch op {
+	case cue.NoOp:
+		refs = append(refs, v)
+	case cue.SelectorOp:
+		rvalue := cue.Dereference(values[0])
+		ref := rvalue.LookupPath(ValuesToPath(values[1:]))
+		refs = append(refs, ref)
+	case cue.AndOp, cue.InterpolationOp:
+		for _, value := range values {
+			refs = append(refs, GetReferences(value)...)
+		}
+	default:
+		fmt.Printf("GetReferences: %v: %#v\n", op, values)
+	}
+
+	return refs
 }

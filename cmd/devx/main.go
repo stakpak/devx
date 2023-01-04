@@ -41,6 +41,7 @@ func init() {
 		projectCmd,
 		versionCmd,
 		diffCmd,
+		lintCmd,
 	)
 
 	projectCmd.AddCommand(
