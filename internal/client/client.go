@@ -30,7 +30,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 
 	if telemetry != "" {
-		err := stack.SendBuild(telemetry, environment)
+		err := stack.SendBuild(configDir, telemetry, environment)
 		if err != nil {
 			return err
 		}
