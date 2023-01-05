@@ -229,6 +229,10 @@ type GitData struct {
 	Branch  string `json:"branch,omitempty"`
 	IsClean *bool  `json:"clean,omitempty"`
 }
+type Reference struct {
+	Source string `json:"source"`
+	Target string `json:"target"`
+}
 
 func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) error {
 	build := BuildData{
@@ -303,11 +307,6 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 	log.Debug("Response Body: ", string(body))
 
 	return nil
-}
-
-type Reference struct {
-	Source string `json:"source"`
-	Target string `json:"target"`
 }
 
 func (s *Stack) GetReferences() map[string][]Reference {
