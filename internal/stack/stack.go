@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"path"
 	"sort"
+	"strings"
 
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
@@ -327,13 +328,16 @@ func GetRef(v cue.Value) []Reference {
 	refs := []Reference{}
 
 	v.Walk(func(val cue.Value) bool {
+		if strings.HasSuffix(val.Path().String(), "$resources") {
+			return false
+		}
 		op, vals := val.Expr()
 		switch op {
 		case cue.AndOp, cue.InterpolationOp:
 			for _, value := range vals {
 				refs = append(refs, GetRef(value)...)
 			}
-			return false
+			// return false
 		case cue.SelectorOp:
 			_, structPath := vals[0].ReferencePath()
 			if len(structPath.Selectors()) > 1 {
@@ -342,7 +346,7 @@ func GetRef(v cue.Value) []Reference {
 					Target: getPathSuffix(val.Path()),
 				})
 			}
-			return false
+			// return false
 		case cue.IndexOp:
 			_, structPath := vals[0].ReferencePath()
 			if len(structPath.Selectors()) > 1 {
@@ -351,7 +355,7 @@ func GetRef(v cue.Value) []Reference {
 					Target: getPathSuffix(val.Path()),
 				})
 			}
-			return false
+			// return false
 		}
 		return true
 	}, nil)
