@@ -215,27 +215,34 @@ func (s *Stack) GetComponents() cue.Value {
 	return s.components
 }
 
+type BuildData struct {
+	Stack       string                 `json:"stack"`
+	Identity    string                 `json:"identity,omitempty"`
+	Result      cue.Value              `json:"result"`
+	Imports     []string               `json:"imports"`
+	References  map[string][]Reference `json:"references"`
+	Environment string                 `json:"environment"`
+	Git         GitData                `json:"git"`
+}
+type GitData struct {
+	Commit  string `json:"commit,omitempty"`
+	Branch  string `json:"branch,omitempty"`
+	IsClean *bool  `json:"clean,omitempty"`
+}
+
 func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) error {
-	build := struct {
-		Stack        string                 `json:"stack"`
-		Identity     string                 `json:"identity,omitempty"`
-		Branch       string                 `json:"branch,omitempty"`
-		Result       cue.Value              `json:"result"`
-		Dependencies []string               `json:"dependencies"`
-		References   map[string][]Reference `json:"references"`
-		Environment  string                 `json:"environment"`
-		Commit       string                 `json:"commit,omitempty"`
-		IsClean      *bool                  `json:"clean,omitempty"`
-	}{
-		Stack:        s.ID,
-		Identity:     "",
-		Branch:       "",
-		Result:       s.GetComponents(),
-		Dependencies: s.DepIDs,
-		References:   s.GetReferences(),
-		Environment:  environment,
-		Commit:       "",
-		IsClean:      nil,
+	build := BuildData{
+		Stack:       s.ID,
+		Identity:    "",
+		Result:      s.GetComponents(),
+		Imports:     s.DepIDs,
+		References:  s.GetReferences(),
+		Environment: environment,
+		Git: GitData{
+			Commit:  "",
+			Branch:  "",
+			IsClean: nil,
+		},
 	}
 
 	repo, err := git.PlainOpen(configDir)
@@ -249,7 +256,7 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 			return err
 		}
 		if ref.Name().IsBranch() {
-			build.Branch = ref.Name().Short()
+			build.Git.Branch = ref.Name().Short()
 		}
 
 		w, err := repo.Worktree()
@@ -263,8 +270,8 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 
 		isClean := status.IsClean()
 
-		build.IsClean = &isClean
-		build.Commit = ref.Hash().String()
+		build.Git.IsClean = &isClean
+		build.Git.Commit = ref.Hash().String()
 	}
 
 	data, err := json.Marshal(build)
