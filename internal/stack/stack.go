@@ -13,6 +13,7 @@ import (
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
 	"devopzilla.com/guku/internal/utils"
+	"github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -214,24 +215,58 @@ func (s *Stack) GetComponents() cue.Value {
 	return s.components
 }
 
-func (s *Stack) SendBuild(telemetryEndpoint string, environment string) error {
+func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) error {
 	build := struct {
 		Stack        string                 `json:"stack"`
-		Identity     *string                `json:"identity"`
-		Branch       string                 `json:"branch"`
+		Identity     string                 `json:"identity,omitempty"`
+		Branch       string                 `json:"branch,omitempty"`
 		Result       cue.Value              `json:"result"`
 		Dependencies []string               `json:"dependencies"`
 		References   map[string][]Reference `json:"references"`
 		Environment  string                 `json:"environment"`
-		Commit       *string                `json:"commit"`
+		Commit       string                 `json:"commit,omitempty"`
+		IsClean      *bool                  `json:"clean,omitempty"`
 	}{
 		Stack:        s.ID,
-		Branch:       "main",
+		Identity:     "",
+		Branch:       "",
 		Result:       s.GetComponents(),
 		Dependencies: s.DepIDs,
 		References:   s.GetReferences(),
 		Environment:  environment,
+		Commit:       "",
+		IsClean:      nil,
 	}
+
+	repo, err := git.PlainOpen(configDir)
+	if err != git.ErrRepositoryNotExists {
+		if err != nil {
+			return err
+		}
+
+		ref, err := repo.Head()
+		if err != nil {
+			return err
+		}
+		if ref.Name().IsBranch() {
+			build.Branch = ref.Name().Short()
+		}
+
+		w, err := repo.Worktree()
+		if err != nil {
+			return err
+		}
+		status, err := w.Status()
+		if err != nil {
+			return err
+		}
+
+		isClean := status.IsClean()
+
+		build.IsClean = &isClean
+		build.Commit = ref.Hash().String()
+	}
+
 	data, err := json.Marshal(build)
 	if err != nil {
 		return err
