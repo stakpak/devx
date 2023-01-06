@@ -395,9 +395,18 @@ packages: [
 }
 
 type ProjectData struct {
-	Stack        string   `json:"stack"`
-	Environments []string `json:"environments"`
-	Imports      []string `json:"imports"`
+	Stack        string          `json:"stack"`
+	Environments []string        `json:"environments"`
+	Imports      []string        `json:"imports"`
+	Git          *ProjectGitData `json:"git"`
+}
+type ProjectGitData struct {
+	Remotes []GitRemote `json:"remotes"`
+}
+type GitRemote struct {
+	URL      string   `json:"url"`
+	Branches []string `json:"branches"`
+	Tags     []string `json:"tags"`
 }
 
 func Publish(configDir string, stackPath string, buildersPath string, telemetry string) error {
@@ -438,6 +447,49 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 		environments = append(environments, k)
 	}
 	project.Environments = environments
+
+	repo, err := git.PlainOpen(configDir)
+	if err != git.ErrRepositoryNotExists {
+		if err != nil {
+			return err
+		}
+
+		gitData := ProjectGitData{
+			Remotes: []GitRemote{},
+		}
+		remotes, err := repo.Remotes()
+		if err != nil {
+			return err
+		}
+		for _, remote := range remotes {
+			remotePrefix := remote.Config().Name + "/"
+			url := strings.TrimSuffix(remote.Config().URLs[0], ".git")
+			branches := []string{}
+			tags := []string{}
+
+			refIter, _ := repo.References()
+			refIter.ForEach(func(r *plumbing.Reference) error {
+				if r.Name().IsRemote() {
+					branch := r.Name().Short()
+					if strings.HasPrefix(branch, remotePrefix) && !strings.HasSuffix(branch, "HEAD") {
+						branches = append(branches, strings.TrimPrefix(branch, remotePrefix))
+					}
+				}
+				if r.Name().IsTag() {
+					tags = append(tags, r.Name().Short())
+				}
+				return nil
+			})
+
+			gitData.Remotes = append(gitData.Remotes, GitRemote{
+				URL:      url,
+				Branches: branches,
+				Tags:     tags,
+			})
+		}
+
+		project.Git = &gitData
+	}
 
 	err = utils.SendTelemtry(telemetry, "stacks", &project)
 	if err != nil {
