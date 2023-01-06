@@ -10,6 +10,7 @@ import (
 	"path"
 	"sort"
 	"strings"
+	"time"
 
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
@@ -223,12 +224,16 @@ type BuildData struct {
 	Imports     []string               `json:"imports"`
 	References  map[string][]Reference `json:"references"`
 	Environment string                 `json:"environment"`
-	Git         GitData                `json:"git"`
+	Git         *GitData               `json:"git,omitempty"`
 }
 type GitData struct {
-	Commit  string `json:"commit,omitempty"`
-	Branch  string `json:"branch,omitempty"`
-	IsClean *bool  `json:"clean,omitempty"`
+	Commit  string    `json:"commit"`
+	Branch  string    `json:"branch"`
+	Message string    `json:"message"`
+	Author  string    `json:"author"`
+	Time    time.Time `json:"time"`
+	IsClean bool      `json:"clean"`
+	Parents []string  `json:"parents"`
 }
 type Reference struct {
 	Source string `json:"source"`
@@ -243,11 +248,7 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 		Imports:     s.DepIDs,
 		References:  s.GetReferences(),
 		Environment: environment,
-		Git: GitData{
-			Commit:  "",
-			Branch:  "",
-			IsClean: nil,
-		},
+		Git:         nil,
 	}
 
 	repo, err := git.PlainOpen(configDir)
@@ -260,8 +261,15 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 		if err != nil {
 			return err
 		}
-		if ref.Name().IsBranch() {
-			build.Git.Branch = ref.Name().Short()
+
+		commit, err := repo.CommitObject(ref.Hash())
+		if err != nil {
+			return err
+		}
+
+		parents := []string{}
+		for _, p := range commit.ParentHashes {
+			parents = append(parents, p.String())
 		}
 
 		w, err := repo.Worktree()
@@ -275,8 +283,15 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 
 		isClean := status.IsClean()
 
-		build.Git.IsClean = &isClean
-		build.Git.Commit = ref.Hash().String()
+		build.Git = &GitData{
+			IsClean: isClean,
+			Commit:  commit.ID().String(),
+			Message: strings.TrimSpace(commit.Message),
+			Author:  commit.Author.String(),
+			Time:    commit.Author.When,
+			Parents: parents,
+			Branch:  ref.Name().Short(),
+		}
 	}
 
 	data, err := json.Marshal(build)
