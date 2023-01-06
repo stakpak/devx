@@ -11,6 +11,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
@@ -388,6 +390,61 @@ packages: [
 			return err
 		}
 	}
+
+	return nil
+}
+
+type ProjectData struct {
+	Stack        string   `json:"stack"`
+	Environments []string `json:"environments"`
+	Imports      []string `json:"imports"`
+}
+
+func Publish(configDir string, stackPath string, buildersPath string, telemetry string) error {
+	if telemetry == "" {
+		return fmt.Errorf("telemtry endpoint URL was not provided")
+	}
+
+	project := ProjectData{}
+
+	overlays, err := utils.GetOverlays(configDir)
+	if err != nil {
+		return err
+	}
+
+	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
+	if err := ValidateProject(value, stackPath); err != nil {
+		return err
+	}
+
+	if stackId == "" {
+		return fmt.Errorf("cannot publish this stack without a module id. please set the \"module\" key to a unique value in \"cue.mod/module.cue\"")
+	}
+
+	project.Stack = stackId
+	project.Imports = depIds
+
+	_, err = stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)), stackId, depIds)
+	if err != nil {
+		return err
+	}
+
+	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
+	if err != nil {
+		return err
+	}
+	environments := make([]string, 0, len(builders))
+	for k := range builders {
+		environments = append(environments, k)
+	}
+	project.Environments = environments
+
+	err = utils.SendTelemtry(telemetry, "stacks", &project)
+	if err != nil {
+		return err
+	}
+
+	log.Infof("🚀 Published %s successfully", stackId)
 
 	return nil
 }

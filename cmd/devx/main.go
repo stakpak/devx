@@ -51,6 +51,7 @@ func init() {
 		validateCmd,
 		discoverCmd,
 		genCmd,
+		publishCmd,
 	)
 }
 

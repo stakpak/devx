@@ -2,8 +2,13 @@ package utils
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"net/http"
+	"net/url"
 	"os"
 	"path"
 	"path/filepath"
@@ -16,6 +21,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
 	"github.com/go-git/go-billy/v5"
+	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
 )
 
@@ -52,8 +58,9 @@ func LoadProject(configDir string, overlays *map[string]string) (cue.Value, stri
 	instances := cueload.Instances([]string{}, buildConfig)
 
 	ctx := cuecontext.New()
+	stackID := strings.Split(instances[0].ID(), ":")[0]
 
-	return ctx.BuildInstance(instances[0]), instances[0].ID(), instances[0].Deps
+	return ctx.BuildInstance(instances[0]), stackID, instances[0].Deps
 }
 
 func GetLastPathFragment(value cue.Value) string {
@@ -315,4 +322,36 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 	})
 
 	return result
+}
+
+func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) error {
+	dataJSON, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+	log.Debug("Sending: ", data)
+
+	url, _ := url.Parse(telemetryEndpoint)
+	url.Path = path.Join(url.Path, "api", apiPath)
+	log.Debug("URL: ", url)
+
+	request, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(dataJSON))
+	if err != nil {
+		return err
+	}
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return err
+	}
+	defer response.Body.Close()
+
+	log.Debug("Response Status: ", response.Status)
+	log.Debug("Response Headers: ", response.Header)
+	body, _ := ioutil.ReadAll(response.Body)
+	log.Debug("Response Body: ", string(body))
+
+	return nil
 }

@@ -71,3 +71,14 @@ var genCmd = &cobra.Command{
 		return nil
 	},
 }
+
+var publishCmd = &cobra.Command{
+	Use:   "publish",
+	Short: "Publish this stack",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.Publish(configDir, stackPath, buildersPath, telemetry); err != nil {
+			return err
+		}
+		return nil
+	},
+}

@@ -1,13 +1,7 @@
 package stack
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/url"
-	"path"
 	"sort"
 	"strings"
 	"time"
@@ -294,35 +288,7 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 		}
 	}
 
-	data, err := json.Marshal(build)
-	if err != nil {
-		return err
-	}
-	log.Debug("Stack ID: ", s.ID)
-
-	url, _ := url.Parse(telemetryEndpoint)
-	url.Path = path.Join(url.Path, "api", "builds")
-	log.Debug("URL: ", url)
-
-	request, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(data))
-	if err != nil {
-		return err
-	}
-	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
-
-	client := &http.Client{}
-	response, err := client.Do(request)
-	if err != nil {
-		return err
-	}
-	defer response.Body.Close()
-
-	log.Debug("Response Status: ", response.Status)
-	log.Debug("Response Headers: ", response.Header)
-	body, _ := ioutil.ReadAll(response.Body)
-	log.Debug("Response Body: ", string(body))
-
-	return nil
+	return utils.SendTelemtry(telemetryEndpoint, "builds", &build)
 }
 
 func (s *Stack) GetReferences() map[string][]Reference {
