@@ -1,6 +1,7 @@
 package stack
 
 import (
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -234,7 +235,7 @@ type Reference struct {
 	Target string `json:"target"`
 }
 
-func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) error {
+func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) (string, error) {
 	build := BuildData{
 		Stack:       s.ID,
 		Identity:    "",
@@ -248,17 +249,17 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 	repo, err := git.PlainOpen(configDir)
 	if err != git.ErrRepositoryNotExists {
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		ref, err := repo.Head()
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		commit, err := repo.CommitObject(ref.Hash())
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		parents := []string{}
@@ -268,11 +269,11 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 
 		w, err := repo.Worktree()
 		if err != nil {
-			return err
+			return "", err
 		}
 		status, err := w.Status()
 		if err != nil {
-			return err
+			return "", err
 		}
 
 		isClean := status.IsClean()
@@ -288,7 +289,18 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 		}
 	}
 
-	return utils.SendTelemtry(telemetryEndpoint, "builds", &build)
+	data, err := utils.SendTelemtry(telemetryEndpoint, "builds", &build)
+	if err != nil {
+		return "", err
+	}
+
+	buildResponse := make(map[string]string)
+	err = json.Unmarshal(data, &buildResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return buildResponse["id"], nil
 }
 
 func (s *Stack) GetReferences() map[string][]Reference {

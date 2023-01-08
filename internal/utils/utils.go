@@ -324,10 +324,10 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 	return result
 }
 
-func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) error {
+func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) ([]byte, error) {
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	log.Debug("Sending: ", data)
 
@@ -337,14 +337,14 @@ func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) er
 
 	request, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(dataJSON))
 	if err != nil {
-		return err
+		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
 	client := &http.Client{}
 	response, err := client.Do(request)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer response.Body.Close()
 
@@ -353,5 +353,9 @@ func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) er
 	body, _ := ioutil.ReadAll(response.Body)
 	log.Debug("Response Body: ", string(body))
 
-	return nil
+	if response.StatusCode > 201 {
+		return body, fmt.Errorf("API request failed")
+	}
+
+	return body, nil
 }

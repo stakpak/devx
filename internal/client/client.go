@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -30,10 +31,13 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 
 	if telemetry != "" {
-		err := stack.SendBuild(configDir, telemetry, environment)
+		buildId, err := stack.SendBuild(configDir, telemetry, environment)
 		if err != nil {
 			return err
 		}
+		log.Infof("\nCreated build at %s/builds/%s", telemetry, buildId)
+		log.Info("To reserve build resources run:")
+		log.Infof("devx reserve %s --telemetry %s\n", buildId, telemetry)
 	}
 
 	if dryRun {
@@ -182,4 +186,21 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	}
 
 	return stack, builder, nil
+}
+
+func Reserve(buildId string, telemetry string) error {
+	if telemetry == "" {
+		return fmt.Errorf("telemtry endpoint is required to reserve build resources")
+	}
+
+	apiPath := path.Join("builds", buildId, "reserve")
+	data, err := utils.SendTelemtry(telemetry, apiPath, nil)
+	if err != nil {
+		log.Debug(string(data))
+		return err
+	}
+
+	log.Infof("Reserved build with id %s", buildId)
+
+	return nil
 }

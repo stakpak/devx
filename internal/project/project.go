@@ -491,7 +491,7 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 		project.Git = &gitData
 	}
 
-	err = utils.SendTelemtry(telemetry, "stacks", &project)
+	_, err = utils.SendTelemtry(telemetry, "stacks", &project)
 	if err != nil {
 		return err
 	}

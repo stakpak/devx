@@ -43,6 +43,7 @@ func init() {
 		projectCmd,
 		versionCmd,
 		diffCmd,
+		reserveCmd,
 	)
 
 	projectCmd.AddCommand(
