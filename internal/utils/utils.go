@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -354,7 +355,18 @@ func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) ([
 	log.Debug("Response Body: ", string(body))
 
 	if response.StatusCode > 201 {
-		return body, fmt.Errorf("API request failed")
+		errResponse := struct {
+			Message string `json:"message"`
+		}{
+			Message: "API request failed",
+		}
+
+		err := json.Unmarshal(body, &errResponse)
+		if err != nil {
+			log.Fatalf("failed to parse error response body: %s", body)
+		}
+
+		return body, errors.New(errResponse.Message)
 	}
 
 	return body, nil

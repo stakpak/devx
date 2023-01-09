@@ -188,16 +188,27 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	return stack, builder, nil
 }
 
-func Reserve(buildId string, telemetry string) error {
+func Reserve(buildId string, telemetry string, dryRun bool) error {
 	if telemetry == "" {
 		return fmt.Errorf("telemtry endpoint is required to reserve build resources")
 	}
 
+	reserveData := struct {
+		DryRun bool `json:"dryRun,omitempty"`
+	}{
+		DryRun: dryRun,
+	}
+
 	apiPath := path.Join("builds", buildId, "reserve")
-	data, err := utils.SendTelemtry(telemetry, apiPath, nil)
+	data, err := utils.SendTelemtry(telemetry, apiPath, reserveData)
 	if err != nil {
 		log.Debug(string(data))
 		return err
+	}
+
+	if dryRun {
+		log.Infof("Looks good, you can reserve this build!")
+		return nil
 	}
 
 	log.Infof("Reserved build with id %s", buildId)
