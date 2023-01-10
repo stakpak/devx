@@ -326,7 +326,7 @@ func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) ([
 	if err != nil {
 		return nil, err
 	}
-	log.Debug("Sending: ", data)
+	log.Debug("Sending: ", string(dataJSON))
 
 	url, _ := url.Parse(telemetryEndpoint)
 	url.Path = path.Join(url.Path, "api", apiPath)
