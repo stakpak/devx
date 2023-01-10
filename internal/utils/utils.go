@@ -33,15 +33,7 @@ const (
 	DryRunKey    ContextKey = "dryRun"
 )
 
-func LoadInstances(configDir string) []*build.Instance {
-	buildConfig := &cueload.Config{
-		Dir:     configDir,
-		Overlay: map[string]cueload.Source{},
-	}
-	return cueload.Instances([]string{}, buildConfig)
-}
-
-func LoadProject(configDir string, overlays *map[string]string) (cue.Value, string, []string) {
+func LoadInstances(configDir string, overlays *map[string]string) []*build.Instance {
 	sourceOverlays := map[string]cueload.Source{}
 
 	if overlays != nil {
@@ -56,7 +48,11 @@ func LoadProject(configDir string, overlays *map[string]string) (cue.Value, stri
 		Dir:     configDir,
 		Overlay: sourceOverlays,
 	}
-	instances := cueload.Instances([]string{}, buildConfig)
+	return cueload.Instances([]string{}, buildConfig)
+}
+
+func LoadProject(configDir string, overlays *map[string]string) (cue.Value, string, []string) {
+	instances := LoadInstances(configDir, overlays)
 
 	ctx := cuecontext.New()
 	stackID := strings.Split(instances[0].ID(), ":")[0]

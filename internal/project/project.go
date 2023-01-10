@@ -71,7 +71,11 @@ func ValidateProject(value cue.Value, stackPath string) error {
 }
 
 func Discover(configDir string, showDefs bool, showTransformers bool) error {
-	instances := utils.LoadInstances(configDir)
+	overlays, err := utils.GetOverlays(configDir)
+	if err != nil {
+		return err
+	}
+	instances := utils.LoadInstances(configDir, &overlays)
 
 	deps := instances[0].Dependencies()
 

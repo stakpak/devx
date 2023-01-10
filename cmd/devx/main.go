@@ -28,7 +28,7 @@ type Version struct {
 }
 
 func init() {
-	rootCmd.PersistentFlags().StringVarP(&telemetry, "telemetry", "t", "", "telemetry endpoint")
+	rootCmd.PersistentFlags().StringVarP(&telemetry, "telemetry", "T", "", "telemetry endpoint")
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
 	rootCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
@@ -45,6 +45,7 @@ func init() {
 		versionCmd,
 		diffCmd,
 		reserveCmd,
+		policyCmd,
 	)
 
 	projectCmd.AddCommand(
@@ -54,6 +55,10 @@ func init() {
 		discoverCmd,
 		genCmd,
 		publishCmd,
+	)
+
+	policyCmd.AddCommand(
+		policyPublishCmd,
 	)
 }
 
