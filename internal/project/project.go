@@ -12,6 +12,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
+	"devopzilla.com/guku/internal/gitrepo"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
@@ -400,18 +401,10 @@ packages: [
 }
 
 type ProjectData struct {
-	Stack        string          `json:"stack"`
-	Environments []string        `json:"environments"`
-	Imports      []string        `json:"imports"`
-	Git          *ProjectGitData `json:"git"`
-}
-type ProjectGitData struct {
-	Remotes []GitRemote `json:"remotes"`
-}
-type GitRemote struct {
-	URL      string   `json:"url"`
-	Branches []string `json:"branches"`
-	Tags     []string `json:"tags"`
+	Stack        string                  `json:"stack"`
+	Environments []string                `json:"environments"`
+	Imports      []string                `json:"imports"`
+	Git          *gitrepo.ProjectGitData `json:"git"`
 }
 
 func Publish(configDir string, stackPath string, buildersPath string, telemetry string) error {
@@ -453,48 +446,11 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 	}
 	project.Environments = environments
 
-	repo, err := git.PlainOpen(configDir)
-	if err != git.ErrRepositoryNotExists {
-		if err != nil {
-			return err
-		}
-
-		gitData := ProjectGitData{
-			Remotes: []GitRemote{},
-		}
-		remotes, err := repo.Remotes()
-		if err != nil {
-			return err
-		}
-		for _, remote := range remotes {
-			remotePrefix := remote.Config().Name + "/"
-			url := strings.TrimSuffix(remote.Config().URLs[0], ".git")
-			branches := []string{}
-			tags := []string{}
-
-			refIter, _ := repo.References()
-			refIter.ForEach(func(r *plumbing.Reference) error {
-				if r.Name().IsRemote() {
-					branch := r.Name().Short()
-					if strings.HasPrefix(branch, remotePrefix) && !strings.HasSuffix(branch, "HEAD") {
-						branches = append(branches, strings.TrimPrefix(branch, remotePrefix))
-					}
-				}
-				if r.Name().IsTag() {
-					tags = append(tags, r.Name().Short())
-				}
-				return nil
-			})
-
-			gitData.Remotes = append(gitData.Remotes, GitRemote{
-				URL:      url,
-				Branches: branches,
-				Tags:     tags,
-			})
-		}
-
-		project.Git = &gitData
+	gitData, err := gitrepo.GetProjectGitData(configDir)
+	if err != nil {
+		return err
 	}
+	project.Git = gitData
 
 	_, err = utils.SendTelemtry(telemetry, "stacks", &project)
 	if err != nil {

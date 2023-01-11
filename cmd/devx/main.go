@@ -45,7 +45,6 @@ func init() {
 		versionCmd,
 		diffCmd,
 		reserveCmd,
-		policyCmd,
 	)
 
 	projectCmd.AddCommand(
@@ -58,8 +57,9 @@ func init() {
 		importCmd,
 	)
 
-	policyCmd.AddCommand(
-		policyPublishCmd,
+	publishCmd.AddCommand(
+		publishPolicyCmd,
+		publishStackCmd,
 	)
 }
 

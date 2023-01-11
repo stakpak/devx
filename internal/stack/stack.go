@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-	"time"
 
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
+	"devopzilla.com/guku/internal/gitrepo"
 	"devopzilla.com/guku/internal/utils"
-	"github.com/go-git/go-git/v5"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -219,16 +218,7 @@ type BuildData struct {
 	Imports     []string               `json:"imports"`
 	References  map[string][]Reference `json:"references"`
 	Environment string                 `json:"environment"`
-	Git         *GitData               `json:"git,omitempty"`
-}
-type GitData struct {
-	Commit  string    `json:"commit"`
-	Branch  string    `json:"branch"`
-	Message string    `json:"message"`
-	Author  string    `json:"author"`
-	Time    time.Time `json:"time"`
-	IsClean bool      `json:"clean"`
-	Parents []string  `json:"parents"`
+	Git         *gitrepo.GitData       `json:"git,omitempty"`
 }
 type Reference struct {
 	Source string `json:"source"`
@@ -246,48 +236,11 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 		Git:         nil,
 	}
 
-	repo, err := git.PlainOpen(configDir)
-	if err != git.ErrRepositoryNotExists {
-		if err != nil {
-			return "", err
-		}
-
-		ref, err := repo.Head()
-		if err != nil {
-			return "", err
-		}
-
-		commit, err := repo.CommitObject(ref.Hash())
-		if err != nil {
-			return "", err
-		}
-
-		parents := []string{}
-		for _, p := range commit.ParentHashes {
-			parents = append(parents, p.String())
-		}
-
-		w, err := repo.Worktree()
-		if err != nil {
-			return "", err
-		}
-		status, err := w.Status()
-		if err != nil {
-			return "", err
-		}
-
-		isClean := status.IsClean()
-
-		build.Git = &GitData{
-			IsClean: isClean,
-			Commit:  commit.ID().String(),
-			Message: strings.TrimSpace(commit.Message),
-			Author:  commit.Author.String(),
-			Time:    commit.Author.When,
-			Parents: parents,
-			Branch:  ref.Name().Short(),
-		}
+	gitData, err := gitrepo.GetGitData(configDir)
+	if err != nil {
+		return "", err
 	}
+	build.Git = gitData
 
 	data, err := utils.SendTelemtry(telemetryEndpoint, "builds", &build)
 	if err != nil {

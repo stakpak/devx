@@ -7,6 +7,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"cuelang.org/go/cue/errors"
+	"devopzilla.com/guku/internal/policy"
 	"devopzilla.com/guku/internal/project"
 )
 
@@ -74,9 +75,25 @@ var genCmd = &cobra.Command{
 
 var publishCmd = &cobra.Command{
 	Use:   "publish",
+	Short: "Publish this project",
+}
+
+var publishStackCmd = &cobra.Command{
+	Use:   "stack",
 	Short: "Publish this stack",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := project.Publish(configDir, stackPath, buildersPath, telemetry); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var publishPolicyCmd = &cobra.Command{
+	Use:   "policy",
+	Short: "Publish global policies in this project",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := policy.Publish(configDir, telemetry); err != nil {
 			return err
 		}
 		return nil
