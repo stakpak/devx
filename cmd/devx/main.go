@@ -55,6 +55,7 @@ func init() {
 		discoverCmd,
 		genCmd,
 		publishCmd,
+		importCmd,
 	)
 
 	policyCmd.AddCommand(

@@ -82,3 +82,15 @@ var publishCmd = &cobra.Command{
 		return nil
 	},
 }
+
+var importCmd = &cobra.Command{
+	Use:   "import [<git repo>@<git revision>]",
+	Short: "Import a dependency",
+	Args:  cobra.ExactArgs(1),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := project.Import(args[0], configDir); err != nil {
+			return err
+		}
+		return nil
+	},
+}

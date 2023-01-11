@@ -11,6 +11,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
+	"cuelang.org/go/cue/format"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
@@ -501,6 +502,73 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 	}
 
 	log.Infof("🚀 Published %s successfully", stackId)
+
+	return nil
+}
+
+func Import(newPackage string, configDir string) error {
+	pkgParts := strings.Split(newPackage, "@")
+	if len(pkgParts) < 2 {
+		return fmt.Errorf("invalid package format, expected \"<git repo>@<git revision>\"")
+	}
+	if len(pkgParts[0]) == 0 {
+		return fmt.Errorf("invalid package format, git repo should not be empty")
+	}
+	if len(pkgParts[1]) == 0 {
+		return fmt.Errorf("invalid package format, git revision should not be empty")
+	}
+	gitRepo := strings.TrimPrefix(strings.TrimPrefix(pkgParts[0], "https://"), "http://")
+	gitRevision := pkgParts[1]
+
+	cuemodulePath := path.Join(configDir, "cue.mod", "module.cue")
+	data, err := os.ReadFile(cuemodulePath)
+	if err != nil {
+		return err
+	}
+
+	ctx := cuecontext.New()
+	cuemodule := ctx.CompileBytes(data)
+	if cuemodule.Err() != nil {
+		return cuemodule.Err()
+	}
+
+	packagesValue := cuemodule.LookupPath(cue.ParsePath("packages"))
+	if packagesValue.Err() != nil {
+		return packagesValue.Err()
+	}
+
+	var packages []string
+	err = packagesValue.Decode(&packages)
+	if err != nil {
+		return err
+	}
+
+	for _, p := range packages {
+		if strings.HasPrefix(p, gitRepo) {
+			log.Infof("Package %s already exists", gitRepo)
+			return nil
+		}
+	}
+
+	packages = append(packages, fmt.Sprintf("%s@%s/pkg", gitRepo, gitRevision))
+
+	newcuemodule := ctx.CompileString("")
+	newcuemodule = newcuemodule.FillPath(cue.ParsePath("module"), cuemodule.LookupPath(cue.ParsePath("module")))
+	newcuemodule = newcuemodule.FillPath(cue.ParsePath("packages"), packages)
+	bytes, err := format.Node(newcuemodule.Syntax())
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(cuemodulePath, bytes, 0600)
+	if err != nil {
+		return err
+	}
+
+	err = Update(configDir)
+	if err != nil {
+		log.Error(err.Error())
+		return errors.New("failed to update packages, fix this issue and re-run devx project update")
+	}
 
 	return nil
 }
