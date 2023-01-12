@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"fmt"
+	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
@@ -82,7 +83,7 @@ func Publish(gitDir string, configDir string, telemetry string) error {
 			catalogItem := CatalogItem{
 				Package:      pkg,
 				Dependencies: deps,
-				Source:       string(data),
+				Source:       strings.TrimSpace(string(data)),
 				Name:         fieldIter.Label(),
 				Git: Git{
 					*projectGitData,
@@ -121,7 +122,7 @@ func Publish(gitDir string, configDir string, telemetry string) error {
 			catalogItem := CatalogItem{
 				Package:      pkg,
 				Dependencies: deps,
-				Source:       string(data),
+				Source:       strings.TrimSpace(string(data)),
 				Name:         fieldIter.Label(),
 				Git: Git{
 					*projectGitData,
