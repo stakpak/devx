@@ -9,6 +9,7 @@ import (
 )
 
 var (
+	gitDir           string
 	configDir        string
 	stackPath        string
 	buildersPath     string
@@ -30,6 +31,7 @@ type Version struct {
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&telemetry, "telemetry", "T", "", "telemetry endpoint")
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
+	rootCmd.PersistentFlags().StringVarP(&gitDir, "git", "g", ".", "project git dir")
 	rootCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "verbose logging")
@@ -60,6 +62,7 @@ func init() {
 	publishCmd.AddCommand(
 		publishPolicyCmd,
 		publishStackCmd,
+		publishCatalogCmd,
 	)
 }
 
