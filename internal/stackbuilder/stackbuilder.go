@@ -144,3 +144,42 @@ func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) 
 	}
 	return nil
 }
+
+func CheckTraitFulfillment(builders Environments, stack *stack.Stack) error {
+	compIter, err := stack.GetComponents().Fields()
+	if err != nil {
+		return err
+	}
+	// component -> trait -> env -> handled
+	compFlowMap := map[string]map[string]map[string]bool{}
+	unmatched := []string{}
+	for compIter.Next() {
+		component := compIter.Label()
+		compFlowMap[component] = map[string]map[string]bool{}
+		traitIter, _ := compIter.Value().LookupPath(cue.ParsePath("$metadata.traits")).Fields()
+		for traitIter.Next() {
+			compFlowMap[component][traitIter.Label()] = map[string]bool{}
+		}
+		for env, builder := range builders {
+			for trait := range compFlowMap[component] {
+				compFlowMap[component][trait][env] = false
+			}
+			for _, flow := range builder.Flows {
+				if flow.Match(compIter.Value()) {
+					for _, trait := range flow.GetHandledTraits() {
+						compFlowMap[component][trait][env] = true
+					}
+				}
+			}
+			for trait := range compFlowMap[component] {
+				if !compFlowMap[component][trait][env] {
+					unmatched = append(unmatched, fmt.Sprintf("%s/#%s in %s", component, trait, env))
+				}
+			}
+		}
+	}
+	if len(unmatched) > 0 {
+		return fmt.Errorf("trait is not fulfilled by any flow: \n  %s", strings.Join(unmatched, "\n  "))
+	}
+	return nil
+}

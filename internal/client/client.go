@@ -20,12 +20,12 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string, strict bool) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
 
-	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath)
+	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath, strict)
 	if err != nil {
 		return err
 	}
@@ -54,7 +54,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	return nil
 }
 
-func Diff(target string, environment string, configDir string, stackPath string, buildersPath string) error {
+func Diff(target string, environment string, configDir string, stackPath string, buildersPath string, strict bool) error {
 	log.Infof("📍 Processing target stack @ %s", target)
 	targetDir, err := os.MkdirTemp("", "devx-target-*")
 	if err != nil {
@@ -94,7 +94,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	targetCtx := context.Background()
 	targetCtx = context.WithValue(targetCtx, utils.ConfigDirKey, targetDir)
 	targetCtx = context.WithValue(targetCtx, utils.DryRunKey, true)
-	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath)
+	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath, strict)
 	if err != nil {
 		return err
 	}
@@ -103,7 +103,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	currentCtx := context.Background()
 	currentCtx = context.WithValue(currentCtx, utils.ConfigDirKey, configDir)
 	currentCtx = context.WithValue(currentCtx, utils.DryRunKey, true)
-	currentStack, _, err := buildStack(currentCtx, environment, configDir, stackPath, buildersPath)
+	currentStack, _, err := buildStack(currentCtx, environment, configDir, stackPath, buildersPath, strict)
 	if err != nil {
 		return err
 	}
@@ -151,7 +151,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	return nil
 }
 
-func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string) (*stack.Stack, *stackbuilder.StackBuilder, error) {
+func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string, strict bool) (*stack.Stack, *stackbuilder.StackBuilder, error) {
 	log.Infof("🏗️  Loading stack...")
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
@@ -160,7 +160,7 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
 
 	log.Info("👀 Validating stack...")
-	err = project.ValidateProject(value, stackPath)
+	err = project.ValidateProject(value, stackPath, buildersPath, strict)
 	if err != nil {
 		return nil, nil, err
 	}

@@ -26,14 +26,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func Validate(configDir string, stackPath string) error {
+func Validate(configDir string, stackPath string, buildersPath string, strict bool) error {
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
 	}
 
 	value, _, _ := utils.LoadProject(configDir, &overlays)
-	if err := ValidateProject(value, stackPath); err != nil {
+	if err := ValidateProject(value, stackPath, buildersPath, strict); err != nil {
 		return err
 	}
 
@@ -41,20 +41,20 @@ func Validate(configDir string, stackPath string) error {
 	return nil
 }
 
-func ValidateProject(value cue.Value, stackPath string) error {
+func ValidateProject(value cue.Value, stackPath string, buildersPath string, strict bool) error {
 	err := value.Validate()
 	if err != nil {
 		return err
 	}
 
-	stack := value.LookupPath(cue.ParsePath(stackPath))
-	if stack.Err() != nil {
-		return stack.Err()
+	stackValue := value.LookupPath(cue.ParsePath(stackPath))
+	if stackValue.Err() != nil {
+		return stackValue.Err()
 	}
 
 	isValid := true
-	err = errors.New("Invalid Components")
-	utils.Walk(stack, func(v cue.Value) bool {
+	err = errors.New("invalid Components")
+	utils.Walk(stackValue, func(v cue.Value) bool {
 		gukuAttr := v.Attribute("guku")
 
 		isRequired, _ := gukuAttr.Flag(0, "required")
@@ -67,6 +67,23 @@ func ValidateProject(value cue.Value, stackPath string) error {
 
 	if !isValid {
 		return err
+	}
+
+	if strict {
+		builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
+		if err != nil {
+			return err
+		}
+
+		stack, err := stack.NewStack(stackValue, "", []string{})
+		if err != nil {
+			return err
+		}
+
+		err = stackbuilder.CheckTraitFulfillment(builders, stack)
+		if err != nil {
+			return err
+		}
 	}
 
 	return nil
@@ -420,7 +437,7 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 	}
 
 	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
-	if err := ValidateProject(value, stackPath); err != nil {
+	if err := ValidateProject(value, stackPath, buildersPath, false); err != nil {
 		return err
 	}
 

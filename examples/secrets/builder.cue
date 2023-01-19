@@ -19,6 +19,10 @@ builders: v1.#StackBuilder & {
 			v1.#Flow & {
 				pipeline: [compose.#AddComposeVolume]
 			},
+			{
+				// allow secrets to not be fulfilled in strict mode
+				match: traits: Secret: null
+			},
 		]
 	}
 	prod: {

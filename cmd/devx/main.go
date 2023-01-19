@@ -18,6 +18,7 @@ var (
 	dryRun           bool
 	noColor          bool
 	telemetry        string
+	strict           bool
 )
 
 var version = "DEV"
@@ -36,6 +37,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
 	rootCmd.PersistentFlags().BoolVar(&debug, "debug", false, "verbose logging")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colors")
+	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "S", false, "make sure all traits are fulfilled by at least one flow")
 	buildCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "d", false, "output the entire stack after transformation without applying drivers")
 	discoverCmd.PersistentFlags().BoolVarP(&showDefs, "definitions", "d", false, "show definitions")
 	discoverCmd.PersistentFlags().BoolVarP(&showTransformers, "transformers", "t", false, "show transformers")

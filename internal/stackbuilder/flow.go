@@ -46,6 +46,15 @@ func NewFlow(value cue.Value) (*Flow, error) {
 	return &flow, nil
 }
 
+func (f *Flow) GetHandledTraits() []string {
+	traits := []string{}
+	traitIter, _ := f.match.LookupPath(cue.ParsePath("traits")).Fields()
+	for traitIter.Next() {
+		traits = append(traits, traitIter.Label())
+	}
+	return traits
+}
+
 func (f *Flow) Match(component cue.Value) bool {
 	metadata := component.LookupPath(cue.ParsePath("$metadata"))
 
