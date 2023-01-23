@@ -3,7 +3,7 @@ package main
 import (
 	"guku.io/devx/v1"
 	"guku.io/devx/v1/transformers/argocd"
-	"guku.io/devx/v1/transformers/terraform"
+	terraform "guku.io/devx/v1/transformers/terraform/helm"
 )
 
 builders: v1.#StackBuilder & {
@@ -11,7 +11,7 @@ builders: v1.#StackBuilder & {
 		mainflows: [
 			v1.#Flow & {
 				pipeline: [
-					argocd.#AddHelmRelease & {namespace: string | *"default"},
+					argocd.#AddHelmRelease & {helm: namespace: string | *"default"},
 				]
 			},
 		]
@@ -20,7 +20,7 @@ builders: v1.#StackBuilder & {
 		mainflows: [
 			v1.#Flow & {
 				pipeline: [
-					terraform.#AddHelmRelease & {namespace: "somethingelse"},
+					terraform.#AddHelmRelease & {helm: namespace: "somethingelse"},
 				]
 			},
 		]

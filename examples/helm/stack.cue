@@ -9,12 +9,15 @@ stack: v1.#Stack & {
 	components: {
 		cowsay: {
 			traits.#Helm
-			url:       "guku.io"
-			chart:     "guku"
-			version:   "v1"
-			namespace: "somethingelse"
-			values: {
-				bla: 123
+			helm: {
+				k8s: version: minor: 19
+				url:       "guku.io"
+				chart:     "guku"
+				version:   "v1"
+				namespace: "somethingelse"
+				values: {
+					bla: 123
+				}
 			}
 		}
 	}
