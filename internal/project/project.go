@@ -1,9 +1,11 @@
 package project
 
 import (
+	"bufio"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path"
 	"path/filepath"
@@ -264,6 +266,26 @@ func Update(configDir string) error {
 			return err
 		}
 
+		moduleFilePath := filepath.Join("cue.mod", "module.cue")
+		_, err = (*mfs).Lstat(moduleFilePath)
+		if err == nil {
+			content, err := (*mfs).Open(moduleFilePath)
+			if err != nil {
+				return err
+			}
+			moduleData, err := io.ReadAll(bufio.NewReader(content))
+			if err != nil {
+				return err
+			}
+			module := ctx.CompileBytes(moduleData)
+			moduleName := module.LookupPath(cue.ParsePath("module"))
+			if moduleName.Err() != nil {
+				return moduleName.Err()
+			}
+
+			log.Debug("Found module: ", moduleName)
+		}
+
 		for _, info := range packageInfo {
 			pkgDir := path.Join(configDir, "cue.mod", repoPath, info.Name())
 			err = os.RemoveAll(pkgDir)
@@ -293,18 +315,18 @@ func Update(configDir string) error {
 func parsePackage(pkg string) (string, string, string, error) {
 	parts := strings.SplitN(pkg, "@", 2)
 	if len(parts) < 2 {
-		return "", "", "", fmt.Errorf("No revision specified")
+		return "", "", "", fmt.Errorf("no revision specified")
 	}
 	url := "https://" + parts[0]
-	parts = strings.SplitN(parts[1], "/", 2)
-	if len(parts) < 2 {
-		return "", "", "", fmt.Errorf("No path specified")
+	remparts := strings.SplitN(parts[1], ":", 2)
+	if len(remparts) < 2 {
+		remparts = strings.SplitN(parts[1], "/", 2)
+		if len(remparts) < 2 {
+			return "", "", "", fmt.Errorf("no path specified")
+		}
 	}
-	revision := parts[0]
-	path := parts[1]
-	if !strings.HasPrefix(path, "pkg") {
-		return "", "", "", fmt.Errorf("Path must start with '/pkg/'")
-	}
+	revision := remparts[0]
+	path := remparts[1]
 
 	return url, revision, path, nil
 }
@@ -314,8 +336,9 @@ func getRepo(repoURL string) (*git.Repository, *billy.Filesystem, error) {
 	mfs := memfs.New()
 	storer := memory.NewStorage()
 	repo, err := git.Clone(storer, mfs, &git.CloneOptions{
-		URL:   repoURL,
-		Depth: 1,
+		NoCheckout: true,
+		URL:        repoURL,
+		Depth:      1,
 	})
 	if err == nil {
 		return repo, &mfs, nil
@@ -400,7 +423,7 @@ func Init(ctx context.Context, parentDir, module string) error {
 
 		contents := fmt.Sprintf(`module: "%s"
 packages: [
-	"github.com/devopzilla/guku-devx-catalog@main/pkg",
+	"github.com/devopzilla/guku-devx-catalog@main:pkg",
 ]
 		`, module)
 		if err := os.WriteFile(modFile, []byte(contents), 0600); err != nil {
