@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/errors"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/utils"
 	"github.com/schollz/progressbar/v3"
@@ -122,23 +123,10 @@ func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) 
 			bar.Add(len(flow.pipeline))
 		}
 		if !stack.IsConcreteComponent(component) {
-			// find all errors
-			errors := []string{}
 			c, _ := stack.GetComponent(componentId)
-
-			c.Walk(func(_ cue.Value) bool { return true }, func(value cue.Value) {
-				if value.Err() != nil {
-					errors = append(errors, value.Err().Error())
-				}
-
-				err := value.Validate(cue.Concrete(true))
-				if err != nil {
-					errors = append(errors, fmt.Sprintf("%s: %s", value.Path(), err.Error()))
-				}
-			})
-
+			err := c.Validate(cue.Concrete(true), cue.All())
 			log.Debugln(component)
-			return fmt.Errorf("component %s is not concrete after transformation:\n  %s", componentId, strings.Join(errors, "\n  "))
+			return fmt.Errorf("component %s is not concrete after transformation:\n%s", componentId, errors.Details(err, nil))
 		}
 		stack.UpdateComponent(componentId, component)
 	}
