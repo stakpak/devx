@@ -1,11 +1,9 @@
 package drivers
 
 import (
-	"path"
-	"strings"
-
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 )
 
 type Driver interface {
@@ -14,70 +12,22 @@ type Driver interface {
 }
 
 // TODO we need to decompose this into DI pattern
-func NewDriversMap(environment string, config map[string]map[string]string) map[string]Driver {
-
-	composePath := path.Join("build", environment, "compose")
-	composeFile := "docker-compose.yml"
-	if composeConfig, ok := config["compose"]; ok {
-		if output, ok := composeConfig["output"]; ok {
-			if strings.HasSuffix(output, ".yml") || strings.HasSuffix(output, ".yaml") {
-				composePath, composeFile = path.Split(output)
-			} else {
-				composePath = output
-			}
-		}
-	}
-
-	terraformPath := path.Join("build", environment, "terraform")
-	if terraformConfig, ok := config["terraform"]; ok {
-		if output, ok := terraformConfig["output"]; ok {
-			terraformPath = output
-		}
-	}
-
-	kubernetesPath := path.Join("build", environment, "kubernetes")
-	if kubernetesConfig, ok := config["kubernetes"]; ok {
-		if output, ok := kubernetesConfig["output"]; ok {
-			kubernetesPath = output
-		}
-	}
-
-	gitlabPath := path.Join("build", environment, "gitlab")
-	gitlabFile := ".gitlab-ci.yml"
-	if gitlabConfig, ok := config["gitlab"]; ok {
-		if output, ok := gitlabConfig["output"]; ok {
-			if strings.HasSuffix(output, ".yml") || strings.HasSuffix(output, ".yaml") {
-				gitlabPath, gitlabFile = path.Split(output)
-			} else {
-				gitlabPath = output
-			}
-		}
-	}
-
-	githubPath := path.Join("build", environment, "github")
-	if githubConfig, ok := config["github"]; ok {
-		if output, ok := githubConfig["output"]; ok {
-			githubPath = output
-		}
-	}
-
+func NewDriversMap(environment string, config map[string]stackbuilder.DriverConfig) map[string]Driver {
 	return map[string]Driver{
 		"compose": &ComposeDriver{
-			Path: composePath,
-			File: composeFile,
+			Config: config["compose"],
 		},
 		"terraform": &TerraformDriver{
-			Path: terraformPath,
+			Config: config["terraform"],
 		},
 		"kubernetes": &KubernetesDriver{
-			Path: kubernetesPath,
+			Config: config["kubernetes"],
 		},
 		"gitlab": &GitlabDriver{
-			Path: gitlabPath,
-			File: gitlabFile,
+			Config: config["gitlab"],
 		},
 		"github": &GitHubDriver{
-			Path: githubPath,
+			Config: config["github"],
 		},
 	}
 }

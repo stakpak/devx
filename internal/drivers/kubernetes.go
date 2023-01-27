@@ -4,17 +4,19 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type KubernetesDriver struct {
-	Path string
+	Config stackbuilder.DriverConfig
 }
 
 func (d *KubernetesDriver) match(resource cue.Value) bool {
@@ -24,6 +26,26 @@ func (d *KubernetesDriver) match(resource cue.Value) bool {
 
 func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 	foundResources := false
+
+	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
+		os.MkdirAll(d.Config.Output.Dir, 0700)
+	}
+
+	var singleFile *os.File
+	if d.Config.Output.File != "" {
+		filePath := filepath.Join(d.Config.Output.Dir, d.Config.Output.File)
+		_, err := os.Stat(filePath)
+		if !os.IsNotExist(err) {
+			os.Remove(filePath)
+		}
+		singleFile, err = os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer singleFile.Close()
+
+		singleFile.WriteString("")
+	}
 
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
@@ -62,12 +84,14 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 					return err
 				}
 
-				fileName := fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString))
-				resourceFilePath := path.Join(d.Path, fileName)
-				if _, err := os.Stat(d.Path); os.IsNotExist(err) {
-					os.MkdirAll(d.Path, 0700)
+				if singleFile != nil {
+					singleFile.Write([]byte("---\n"))
+					singleFile.Write(data)
+				} else {
+					fileName := fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString))
+					filePath := path.Join(d.Config.Output.Dir, fileName)
+					os.WriteFile(filePath, data, 0700)
 				}
-				os.WriteFile(resourceFilePath, data, 0700)
 			}
 		}
 	}
@@ -76,7 +100,7 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 		return nil
 	}
 
-	log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Path)
+	log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Config.Output.Dir)
 
 	return nil
 }

@@ -7,12 +7,13 @@ import (
 
 	"cuelang.org/go/cue"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type TerraformDriver struct {
-	Path string
+	Config stackbuilder.DriverConfig
 }
 
 func (d *TerraformDriver) match(resource cue.Value) bool {
@@ -50,13 +51,13 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
 		return err
 	}
 
-	terraformFilePath := path.Join(d.Path, "generated.tf.json")
-	if _, err := os.Stat(d.Path); os.IsNotExist(err) {
-		os.MkdirAll(d.Path, 0700)
+	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
+		os.MkdirAll(d.Config.Output.Dir, 0700)
 	}
-	os.WriteFile(terraformFilePath, data, 0700)
+	filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
+	os.WriteFile(filePath, data, 0700)
 
-	log.Infof("[terraform] applied resources to \"%s\"", terraformFilePath)
+	log.Infof("[terraform] applied resources to \"%s\"", filePath)
 
 	return nil
 }

@@ -7,13 +7,13 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type ComposeDriver struct {
-	Path string
-	File string
+	Config stackbuilder.DriverConfig
 }
 
 func (d *ComposeDriver) match(resource cue.Value) bool {
@@ -51,13 +51,13 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 		return err
 	}
 
-	composeFilePath := path.Join(d.Path, d.File)
-	if _, err := os.Stat(d.Path); os.IsNotExist(err) {
-		os.MkdirAll(d.Path, 0700)
+	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
+		os.MkdirAll(d.Config.Output.Dir, 0700)
 	}
-	os.WriteFile(composeFilePath, data, 0700)
+	filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
+	os.WriteFile(filePath, data, 0700)
 
-	log.Infof("[compose] applied resources to \"%s\"", composeFilePath)
+	log.Infof("[compose] applied resources to \"%s\"", filePath)
 
 	return nil
 }

@@ -3,6 +3,7 @@ package stackbuilder
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue"
@@ -16,9 +17,16 @@ import (
 type Environments = map[string]*StackBuilder
 
 type StackBuilder struct {
-	DriverConfig         map[string]map[string]string
+	DriverConfig         map[string]DriverConfig
 	AdditionalComponents *cue.Value
 	Flows                []*Flow
+}
+type DriverConfig struct {
+	Output DriverOutput `json:"output"`
+}
+type DriverOutput struct {
+	Dir  string `json:"dir"`
+	File string `json:"file"`
 }
 
 func NewEnvironments(value cue.Value) (Environments, error) {
@@ -31,7 +39,7 @@ func NewEnvironments(value cue.Value) (Environments, error) {
 
 	for envIter.Next() {
 		name := utils.GetLastPathFragment(envIter.Value())
-		environments[name], err = NewStackBuilder(envIter.Value())
+		environments[name], err = NewStackBuilder(name, envIter.Value())
 		if err != nil {
 			return environments, err
 		}
@@ -40,19 +48,29 @@ func NewEnvironments(value cue.Value) (Environments, error) {
 	return environments, nil
 }
 
-func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
+func NewStackBuilder(environment string, value cue.Value) (*StackBuilder, error) {
+	isV2Builder := false
+	envName := value.LookupPath(cue.ParsePath("environment"))
+	if envName.Exists() {
+		isV2Builder = true
+	}
+
 	flows := value.LookupPath(cue.ParsePath("flows"))
 	if flows.Err() != nil {
 		return nil, flows.Err()
 	}
 
 	var additionalComponents *cue.Value
-	additionalComponentsValue := value.LookupPath(cue.ParsePath("additionalComponents"))
+	additionalComponentsPath := "additionalComponents"
+	if isV2Builder {
+		additionalComponentsPath = "components"
+	}
+	additionalComponentsValue := value.LookupPath(cue.ParsePath(additionalComponentsPath))
 	if additionalComponentsValue.Exists() {
 		additionalComponents = &additionalComponentsValue
 	}
 
-	driverConfig := make(map[string]map[string]string)
+	driverConfig := map[string]DriverConfig{}
 	driverConfigValue := value.LookupPath(cue.ParsePath("drivers"))
 	if driverConfigValue.Exists() {
 		driverIter, err := driverConfigValue.Fields()
@@ -60,18 +78,77 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 			return nil, err
 		}
 		for driverIter.Next() {
-			driverConfig[driverIter.Label()] = make(map[string]string)
+			driverConfig[driverIter.Label()] = DriverConfig{}
 			configIter, err := driverIter.Value().Fields()
 			if err != nil {
 				return nil, err
 			}
 			for configIter.Next() {
-				value, err := configIter.Value().String()
-				if err != nil {
-					return nil, err
+				switch configIter.Value().Kind() {
+				case cue.StringKind:
+					value, err := configIter.Value().String()
+					if err != nil {
+						return nil, err
+					}
+					dir, file := filepath.Split(value)
+					if filepath.Ext(file) == "" {
+						dir, file = value, ""
+					}
+					driverConfig[driverIter.Label()] = DriverConfig{
+						Output: DriverOutput{
+							Dir:  dir,
+							File: file,
+						},
+					}
+				case cue.StructKind:
+					dirValue := configIter.Value().LookupPath(cue.ParsePath("dir"))
+					fileValue := configIter.Value().LookupPath(cue.ParsePath("file"))
+
+					var dirPaths []string
+					var file string
+
+					err := dirValue.Decode(&dirPaths)
+					if err != nil {
+						return nil, err
+					}
+					err = fileValue.Decode(&file)
+					if err != nil {
+						return nil, err
+					}
+
+					driverConfig[driverIter.Label()] = DriverConfig{
+						Output: DriverOutput{
+							Dir:  filepath.Join(dirPaths...),
+							File: file,
+						},
+					}
 				}
-				driverConfig[driverIter.Label()][configIter.Label()] = value
 			}
+		}
+	}
+
+	if !isV2Builder {
+		driverDefaults := map[string]string{
+			"compose":    "docker-compose.yml",
+			"gitlab":     ".gitlab-ci.yml",
+			"terraform":  "generated.tf.json",
+			"github":     "",
+			"kubernetes": "",
+		}
+		for name, file := range driverDefaults {
+			config, ok := driverConfig[name]
+			if !ok {
+				driverConfig[name] = DriverConfig{
+					Output: DriverOutput{"", ""},
+				}
+			}
+			if config.Output.Dir == "" && config.Output.File == "" {
+				config.Output.Dir = filepath.Join("build", environment, name)
+			}
+			if config.Output.File == "" {
+				config.Output.File = file
+			}
+			driverConfig[name] = config
 		}
 	}
 
@@ -80,13 +157,31 @@ func NewStackBuilder(value cue.Value) (*StackBuilder, error) {
 		AdditionalComponents: additionalComponents,
 		Flows:                make([]*Flow, 0),
 	}
-	flowIter, _ := flows.List()
-	for flowIter.Next() {
-		flow, err := NewFlow(flowIter.Value())
+
+	if isV2Builder {
+		flowIter, err := flows.Fields()
 		if err != nil {
 			return nil, err
 		}
-		stackBuilder.Flows = append(stackBuilder.Flows, flow)
+		for flowIter.Next() {
+			flow, err := NewFlow(flowIter.Value())
+			if err != nil {
+				return nil, err
+			}
+			stackBuilder.Flows = append(stackBuilder.Flows, flow)
+		}
+	} else {
+		flowIter, err := flows.List()
+		if err != nil {
+			return nil, err
+		}
+		for flowIter.Next() {
+			flow, err := NewFlow(flowIter.Value())
+			if err != nil {
+				return nil, err
+			}
+			stackBuilder.Flows = append(stackBuilder.Flows, flow)
+		}
 	}
 
 	return &stackBuilder, nil

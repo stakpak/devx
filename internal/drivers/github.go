@@ -8,12 +8,13 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
 	"devopzilla.com/guku/internal/stack"
+	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
 
 type GitHubDriver struct {
-	Path string
+	Config stackbuilder.DriverConfig
 }
 
 func (d *GitHubDriver) match(resource cue.Value) bool {
@@ -41,12 +42,15 @@ func (d *GitHubDriver) ApplyAll(stack *stack.Stack) error {
 					return err
 				}
 
-				fileName := fmt.Sprintf("%s-github-workflow.yml", resourceIter.Label())
-				resourceFilePath := path.Join(d.Path, fileName)
-				if _, err := os.Stat(d.Path); os.IsNotExist(err) {
-					os.MkdirAll(d.Path, 0700)
+				if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
+					os.MkdirAll(d.Config.Output.Dir, 0700)
 				}
-				os.WriteFile(resourceFilePath, data, 0700)
+				fileName := fmt.Sprintf("%s-github-workflow.yml", resourceIter.Label())
+				if d.Config.Output.File != "" {
+					fileName = d.Config.Output.File
+				}
+				filePath := path.Join(d.Config.Output.Dir, fileName)
+				os.WriteFile(filePath, data, 0700)
 			}
 		}
 	}
@@ -55,7 +59,7 @@ func (d *GitHubDriver) ApplyAll(stack *stack.Stack) error {
 		return nil
 	}
 
-	log.Infof("[github] applied resources to \"%s/*-github-workflow.yml\"", d.Path)
+	log.Infof("[github] applied resources to \"%s/*-github-workflow.yml\"", d.Config.Output.Dir)
 
 	return nil
 }
