@@ -218,8 +218,7 @@ func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) 
 			bar.Add(len(flow.pipeline))
 		}
 		if !stack.IsConcreteComponent(component) {
-			c, _ := stack.GetComponent(componentId)
-			err := c.Validate(cue.Concrete(true), cue.All())
+			err := component.Validate(cue.Concrete(true), cue.All())
 			log.Debugln(component)
 			return fmt.Errorf("component %s is not concrete after transformation:\n%s", componentId, errors.Details(err, nil))
 		}
