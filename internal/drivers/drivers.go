@@ -8,7 +8,7 @@ import (
 
 type Driver interface {
 	match(resource cue.Value) bool
-	ApplyAll(stack *stack.Stack) error
+	ApplyAll(stack *stack.Stack, stdout bool) error
 }
 
 // TODO we need to decompose this into DI pattern

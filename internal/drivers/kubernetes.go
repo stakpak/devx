@@ -28,7 +28,7 @@ type Manifest struct {
 	Data []byte
 }
 
-func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
+func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	manifests := []Manifest{}
 
 	for _, componentId := range stack.GetTasks() {
@@ -77,6 +77,19 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack) error {
 
 	if len(manifests) == 0 {
 		return nil
+	}
+
+	if stdout {
+		for _, m := range manifests {
+			if _, err := os.Stdout.Write([]byte("---\n")); err != nil {
+				return err
+			}
+			if _, err := os.Stdout.Write(m.Data); err != nil {
+				return err
+			}
+		}
+		_, err := os.Stdout.Write([]byte("\n"))
+		return err
 	}
 
 	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {

@@ -3,8 +3,10 @@ package stackbuilder
 import (
 	"context"
 	"fmt"
+	"io"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/errors"
@@ -197,7 +199,26 @@ func (sb *StackBuilder) TransformStack(ctx context.Context, stack *stack.Stack) 
 	for _, flow := range sb.Flows {
 		total += len(orderedTasks) * len(flow.pipeline)
 	}
-	bar := progressbar.Default(int64(total), "🏭 Transforming stack")
+
+	progressWriter := log.StandardLogger().Out
+	if log.GetLevel() == log.ErrorLevel {
+		progressWriter = io.Discard
+	}
+	bar := progressbar.NewOptions64(
+		int64(total),
+		progressbar.OptionSetDescription("🏭 Transforming stack"),
+		progressbar.OptionSetWriter(progressWriter),
+		progressbar.OptionSetWidth(10),
+		progressbar.OptionThrottle(65*time.Millisecond),
+		progressbar.OptionShowCount(),
+		progressbar.OptionShowIts(),
+		progressbar.OptionOnCompletion(func() {
+			log.Info()
+		}),
+		progressbar.OptionSpinnerType(14),
+		progressbar.OptionFullWidth(),
+		progressbar.OptionSetRenderBlankState(true),
+	)
 	defer bar.Finish()
 	for _, componentId := range orderedTasks {
 		component, err := stack.GetComponent(componentId)

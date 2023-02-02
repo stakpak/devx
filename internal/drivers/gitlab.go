@@ -21,7 +21,7 @@ func (d *GitlabDriver) match(resource cue.Value) bool {
 	return driverName == "gitlab"
 }
 
-func (d *GitlabDriver) ApplyAll(stack *stack.Stack) error {
+func (d *GitlabDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
 
@@ -36,6 +36,14 @@ func (d *GitlabDriver) ApplyAll(stack *stack.Stack) error {
 				data, err := yaml.Encode(resource)
 				if err != nil {
 					return err
+				}
+
+				if stdout {
+					_, err := os.Stdout.Write(data)
+					if err != nil {
+						return err
+					}
+					continue
 				}
 
 				if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {

@@ -20,7 +20,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string, strict bool) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string, strict bool, stdout bool) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
@@ -46,7 +46,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	}
 
 	for id, driver := range drivers.NewDriversMap(environment, builder.DriverConfig) {
-		if err := driver.ApplyAll(stack); err != nil {
+		if err := driver.ApplyAll(stack, stdout); err != nil {
 			return fmt.Errorf("error running %s driver: %s", id, err)
 		}
 	}

@@ -21,7 +21,7 @@ func (d *TerraformDriver) match(resource cue.Value) bool {
 	return driverName == "terraform"
 }
 
-func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
+func (d *TerraformDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 
 	terraformFile := stack.GetContext().CompileString("_")
 	foundResources := false
@@ -48,6 +48,15 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	data, err := json.MarshalIndent(terraformFile, "", "  ")
 	if err != nil {
+		return err
+	}
+
+	if stdout {
+		_, err := os.Stdout.Write(data)
+		if err != nil {
+			return err
+		}
+		_, err = os.Stdout.Write([]byte("\n"))
 		return err
 	}
 

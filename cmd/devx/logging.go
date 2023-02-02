@@ -8,8 +8,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var debug bool
-
 type PlainFormatter struct {
 }
 
@@ -20,12 +18,16 @@ func (f *PlainFormatter) Format(entry *log.Entry) ([]byte, error) {
 func setupLogging(cmd *cobra.Command, args []string) {
 	color.NoColor = noColor
 
-	if debug {
+	if verbosity == "debug" {
 		log.Info("Debug logs enabled")
 		log.SetLevel(log.DebugLevel)
 		log.SetFormatter(&log.TextFormatter{})
 	} else {
 		plainFormatter := new(PlainFormatter)
 		log.SetFormatter(plainFormatter)
+	}
+
+	if verbosity == "error" {
+		log.SetLevel(log.ErrorLevel)
 	}
 }

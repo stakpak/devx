@@ -21,7 +21,7 @@ func (d *ComposeDriver) match(resource cue.Value) bool {
 	return driverName == "compose"
 }
 
-func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
+func (d *ComposeDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 
 	composeFile := stack.GetContext().CompileString("_")
 	foundResources := false
@@ -48,6 +48,11 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack) error {
 	}
 	data, err := yaml.Encode(composeFile)
 	if err != nil {
+		return err
+	}
+
+	if stdout {
+		_, err := os.Stdout.Write(data)
 		return err
 	}
 

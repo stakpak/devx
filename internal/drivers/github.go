@@ -22,7 +22,7 @@ func (d *GitHubDriver) match(resource cue.Value) bool {
 	return driverName == "github"
 }
 
-func (d *GitHubDriver) ApplyAll(stack *stack.Stack) error {
+func (d *GitHubDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	foundResources := false
 
 	for _, componentId := range stack.GetTasks() {
@@ -40,6 +40,14 @@ func (d *GitHubDriver) ApplyAll(stack *stack.Stack) error {
 				data, err := yaml.Encode(resource)
 				if err != nil {
 					return err
+				}
+
+				if stdout {
+					_, err := os.Stdout.Write(data)
+					if err != nil {
+						return err
+					}
+					continue
 				}
 
 				if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
