@@ -46,12 +46,25 @@ func init() {
 	discoverCmd.PersistentFlags().BoolVarP(&showTransformers, "transformers", "t", false, "show transformers")
 	reserveCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "d", false, "attempt reserving stack resources")
 
+	runCmd.PersistentFlags().BoolVar(&runFlags.List, "list", false, "lists tasks with description of current Taskfile")
+	runCmd.PersistentFlags().BoolVar(&runFlags.ListAll, "list-all", false, "lists tasks with or without a description")
+	runCmd.PersistentFlags().BoolVar(&runFlags.ListJson, "json", false, "formats task list as json")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Status, "status", false, "exits with non-zero exit code if any of the given tasks is not up-to-date")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Force, "force", false, "forces execution even when the task is up-to-date")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Watch, "watch", false, "enables watch of the given task")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Dry, "dry", false, "compiles and prints tasks in the order that they would be run, without executing them")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Summary, "summary", false, "show summary about a task")
+	runCmd.PersistentFlags().BoolVar(&runFlags.ExitCode, "exit-code", false, "pass-through the exit code of the task command")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Color, "color", true, "colored output. Enabled by default. Set flag to false to disable")
+	runCmd.PersistentFlags().DurationVar(&runFlags.Interval, "interval", 0, "interval to watch for changes")
+
 	rootCmd.AddCommand(
 		buildCmd,
 		projectCmd,
 		versionCmd,
 		diffCmd,
 		reserveCmd,
+		runCmd,
 	)
 
 	projectCmd.AddCommand(

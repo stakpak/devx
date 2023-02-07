@@ -22,6 +22,7 @@ type StackBuilder struct {
 	DriverConfig         map[string]DriverConfig
 	AdditionalComponents *cue.Value
 	Flows                []*Flow
+	Taskfile             *cue.Value
 }
 type DriverConfig struct {
 	Output DriverOutput `json:"output"`
@@ -154,10 +155,20 @@ func NewStackBuilder(environment string, value cue.Value) (*StackBuilder, error)
 		}
 	}
 
+	var taskfile *cue.Value
+	taskfilePath := "taskfile"
+	if isV2Builder {
+		taskfileValue := value.LookupPath(cue.ParsePath(taskfilePath))
+		if taskfileValue.Exists() {
+			taskfile = &taskfileValue
+		}
+	}
+
 	stackBuilder := StackBuilder{
 		DriverConfig:         driverConfig,
 		AdditionalComponents: additionalComponents,
 		Flows:                make([]*Flow, 0),
+		Taskfile:             taskfile,
 	}
 
 	if isV2Builder {
