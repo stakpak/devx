@@ -46,6 +46,8 @@ func init() {
 	discoverCmd.PersistentFlags().BoolVarP(&showTransformers, "transformers", "t", false, "show transformers")
 	reserveCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "d", false, "attempt reserving stack resources")
 
+	runCmd.PersistentFlags().BoolVar(&runFlags.Verbose, "verbose", false, "enables verbose mode")
+	runCmd.PersistentFlags().BoolVar(&runFlags.Parallel, "parallel", false, "executes tasks provided on command line in parallel")
 	runCmd.PersistentFlags().BoolVar(&runFlags.List, "list", false, "lists tasks with description of current Taskfile")
 	runCmd.PersistentFlags().BoolVar(&runFlags.ListAll, "list-all", false, "lists tasks with or without a description")
 	runCmd.PersistentFlags().BoolVar(&runFlags.ListJson, "json", false, "formats task list as json")

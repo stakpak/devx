@@ -33,9 +33,8 @@ type RunFlags struct {
 	Dry      bool
 	Summary  bool
 	ExitCode bool
-	// parallel    bool
-	// concurrency int
-	// output      taskfile.Output
+	Parallel bool
+	Verbose  bool
 	Color    bool
 	Interval time.Duration
 }
@@ -86,16 +85,16 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 	e := task.Executor{
 		Force:       runFlags.Force,
 		Watch:       runFlags.Watch,
-		Verbose:     false,
+		Verbose:     runFlags.Verbose,
 		Silent:      true,
 		Dir:         "",
 		Dry:         runFlags.Dry,
 		Entrypoint:  taskFile.Name(),
 		Summary:     runFlags.Summary,
-		Parallel:    false,
+		Parallel:    runFlags.Parallel,
 		Color:       runFlags.Color,
 		Concurrency: 0,
-		Interval:    0,
+		Interval:    runFlags.Interval,
 
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
