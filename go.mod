@@ -5,6 +5,7 @@ go 1.18
 require (
 	cuelang.org/go v0.4.3
 	github.com/go-git/go-billy/v5 v5.3.1
+	mvdan.cc/sh/v3 v3.6.0
 )
 
 require (
@@ -39,7 +40,6 @@ require (
 	golang.org/x/sys v0.3.0 // indirect
 	golang.org/x/term v0.3.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
-	mvdan.cc/sh/v3 v3.6.0 // indirect
 )
 
 require (
