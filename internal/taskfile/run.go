@@ -1,9 +1,10 @@
-package workflows
+package taskfile
 
 import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"cuelang.org/go/cue"
@@ -12,8 +13,11 @@ import (
 	"devopzilla.com/guku/internal/stackbuilder"
 	"devopzilla.com/guku/internal/utils"
 
+	"mvdan.cc/sh/v3/syntax"
+
 	"github.com/go-task/task/v3"
-	"github.com/go-task/task/v3/args"
+	taskargs "github.com/go-task/task/v3/args"
+
 	"github.com/go-task/task/v3/taskfile"
 
 	log "github.com/sirupsen/logrus"
@@ -36,7 +40,7 @@ type RunFlags struct {
 	Interval time.Duration
 }
 
-func Run(configDir string, buildersPath string, runFlags RunFlags, environment string, tasks []string) error {
+func Run(configDir string, buildersPath string, runFlags RunFlags, environment string, doubleDashPos int, args []string) error {
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
@@ -54,20 +58,28 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 	}
 
 	log.Debug(builder.Taskfile)
+	err = builder.Taskfile.Validate(cue.Concrete(true))
+	if err != nil {
+		log.Error(err)
+		return err
+	}
 
 	taskFileContent, err := cueyaml.Encode(*builder.Taskfile)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	taskFile, err := os.CreateTemp(configDir, ".taskfile-*.yml")
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 	defer os.RemoveAll(taskFile.Name())
 
 	_, err = taskFile.Write(taskFileContent)
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
@@ -100,7 +112,8 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 
 	var listOptions = task.NewListOptions(runFlags.List, runFlags.ListAll, runFlags.ListJson)
 	if err := listOptions.Validate(); err != nil {
-		log.Fatal(err)
+		log.Error(err)
+		return err
 	}
 
 	if listOptions.ShouldListTasks() {
@@ -110,17 +123,39 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 
 	err = e.Setup()
 	if err != nil {
+		log.Error(err)
 		return err
 	}
 
 	if listOptions.ShouldListTasks() {
 		if foundTasks, err := e.ListTasks(listOptions); !foundTasks || err != nil {
+			log.Error(err)
 			return err
 		}
 		return nil
 	}
 
-	calls, globals := args.ParseV3(tasks...)
+	var tasks []string
+	cliArgs := ""
+	if doubleDashPos == -1 {
+		tasks = args
+	} else {
+		var quotedCliArgs []string
+		for _, arg := range args[doubleDashPos-1:] {
+			quotedCliArg, err := syntax.Quote(arg, syntax.LangBash)
+			if err != nil {
+				log.Error(err)
+				return nil
+			}
+			quotedCliArgs = append(quotedCliArgs, quotedCliArg)
+		}
+		tasks = args[:doubleDashPos-1]
+		cliArgs = strings.Join(quotedCliArgs, " ")
+	}
+
+	calls, globals := taskargs.ParseV3(tasks...)
+
+	globals.Set("CLI_ARGS", taskfile.Var{Static: cliArgs})
 	e.Taskfile.Vars.Merge(globals)
 	e.InterceptInterruptSignals()
 
