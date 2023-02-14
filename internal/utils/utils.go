@@ -21,6 +21,7 @@ import (
 	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
+	"devopzilla.com/guku/internal/auth"
 	"github.com/go-git/go-billy/v5"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"
@@ -321,22 +322,45 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 	return result
 }
 
-func SendTelemtry(telemetryEndpoint string, apiPath string, data interface{}) ([]byte, error) {
+func SendTelemtry(server auth.ServerConfig, apiPath string, data interface{}) ([]byte, error) {
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
 	}
 	log.Debug("Sending: ", string(dataJSON))
 
-	url, _ := url.Parse(telemetryEndpoint)
+	url, _ := url.Parse(server.Endpoint)
 	url.Path = path.Join(url.Path, "api", apiPath)
 	log.Debug("URL: ", url)
+
+	if url.Scheme != "https" {
+		log.Warnf("[WARNING] connection to \"%s\" is not secure, this could leak your credentials", server.Endpoint)
+	}
 
 	request, err := http.NewRequest("POST", url.String(), bytes.NewBuffer(dataJSON))
 	if err != nil {
 		return nil, err
 	}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	var tenant string
+	var token *string
+	if server.Tenant == "" {
+		tenant, token, err = auth.GetDefaultToken()
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		tenant = server.Tenant
+		token, err = auth.GetToken(server)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if token == nil {
+		return nil, fmt.Errorf("was not able to get credentials for tenant %s", tenant)
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *token))
 
 	client := &http.Client{}
 	response, err := client.Do(request)

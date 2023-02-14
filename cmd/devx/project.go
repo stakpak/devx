@@ -83,7 +83,7 @@ var publishStackCmd = &cobra.Command{
 	Use:   "stack",
 	Short: "Publish this stack",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Publish(configDir, stackPath, buildersPath, telemetry); err != nil {
+		if err := project.Publish(configDir, stackPath, buildersPath, server); err != nil {
 			return err
 		}
 		return nil
@@ -94,7 +94,7 @@ var publishPolicyCmd = &cobra.Command{
 	Use:   "policy",
 	Short: "Publish global policies in this project",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := policy.Publish(configDir, telemetry); err != nil {
+		if err := policy.Publish(configDir, server); err != nil {
 			return err
 		}
 		return nil
@@ -105,7 +105,7 @@ var publishCatalogCmd = &cobra.Command{
 	Use:   "catalog",
 	Short: "Publish catalog components in this project",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := catalog.Publish(gitDir, configDir, telemetry); err != nil {
+		if err := catalog.Publish(gitDir, configDir, server); err != nil {
 			return err
 		}
 		return nil

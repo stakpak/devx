@@ -13,6 +13,7 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	log "github.com/sirupsen/logrus"
 
+	"devopzilla.com/guku/internal/auth"
 	"devopzilla.com/guku/internal/drivers"
 	"devopzilla.com/guku/internal/project"
 	"devopzilla.com/guku/internal/stack"
@@ -20,7 +21,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, telemetry string, strict bool, stdout bool) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, server auth.ServerConfig, strict bool, stdout bool) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
@@ -30,14 +31,14 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 		return err
 	}
 
-	if telemetry != "" {
-		buildId, err := stack.SendBuild(configDir, telemetry, environment)
+	if server.Enable {
+		buildId, err := stack.SendBuild(configDir, server, environment)
 		if err != nil {
 			return err
 		}
-		log.Infof("\nCreated build at %s/builds/%s", telemetry, buildId)
+		log.Infof("\nCreated build at %s/builds/%s", server.Endpoint, buildId)
 		log.Info("To reserve build resources run:")
-		log.Infof("devx reserve %s --telemetry %s\n", buildId, telemetry)
+		log.Infof("devx reserve %s --telemetry %s\n", buildId, server.Endpoint)
 	}
 
 	if dryRun {
@@ -188,9 +189,9 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	return stack, builder, nil
 }
 
-func Reserve(buildId string, telemetry string, dryRun bool) error {
-	if telemetry == "" {
-		return fmt.Errorf("telemtry endpoint is required to reserve build resources")
+func Reserve(buildId string, server auth.ServerConfig, dryRun bool) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to reserve resources")
 	}
 
 	reserveData := struct {
@@ -200,7 +201,7 @@ func Reserve(buildId string, telemetry string, dryRun bool) error {
 	}
 
 	apiPath := path.Join("builds", buildId, "reserve")
-	data, err := utils.SendTelemtry(telemetry, apiPath, reserveData)
+	data, err := utils.SendTelemtry(server, apiPath, reserveData)
 	if err != nil {
 		log.Debug(string(data))
 		return err

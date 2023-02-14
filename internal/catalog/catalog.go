@@ -9,6 +9,7 @@ import (
 	"cuelang.org/go/cue/format"
 	log "github.com/sirupsen/logrus"
 
+	"devopzilla.com/guku/internal/auth"
 	"devopzilla.com/guku/internal/gitrepo"
 	"devopzilla.com/guku/internal/utils"
 )
@@ -26,9 +27,9 @@ type Git struct {
 	gitrepo.GitData
 }
 
-func Publish(gitDir string, configDir string, telemetry string) error {
-	if telemetry == "" {
-		return fmt.Errorf("telemtry endpoint is required to publish catalog")
+func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to publish catalog")
 	}
 
 	overlays, err := utils.GetOverlays(configDir)
@@ -94,7 +95,7 @@ func Publish(gitDir string, configDir string, telemetry string) error {
 					"type":   "Trait",
 				},
 			}
-			err = publishCatalogItem(telemetry, &catalogItem)
+			err = publishCatalogItem(server, &catalogItem)
 			if err != nil {
 				return err
 			}
@@ -133,7 +134,7 @@ func Publish(gitDir string, configDir string, telemetry string) error {
 					"type":       "Stack",
 				},
 			}
-			err = publishCatalogItem(telemetry, &catalogItem)
+			err = publishCatalogItem(server, &catalogItem)
 			if err != nil {
 				return err
 			}
@@ -144,8 +145,8 @@ func Publish(gitDir string, configDir string, telemetry string) error {
 	return nil
 }
 
-func publishCatalogItem(telemetry string, catalogItem *CatalogItem) error {
-	data, err := utils.SendTelemtry(telemetry, "catalog", catalogItem)
+func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) error {
+	data, err := utils.SendTelemtry(server, "catalog", catalogItem)
 	if err != nil {
 		log.Debug(string(data))
 		return err

@@ -14,6 +14,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
+	"devopzilla.com/guku/internal/auth"
 	"devopzilla.com/guku/internal/gitrepo"
 	"devopzilla.com/guku/internal/stack"
 	"devopzilla.com/guku/internal/stackbuilder"
@@ -447,9 +448,9 @@ type ProjectData struct {
 	Git          *gitrepo.ProjectGitData `json:"git"`
 }
 
-func Publish(configDir string, stackPath string, buildersPath string, telemetry string) error {
-	if telemetry == "" {
-		return fmt.Errorf("telemtry endpoint URL was not provided")
+func Publish(configDir string, stackPath string, buildersPath string, server auth.ServerConfig) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to publish stack")
 	}
 
 	project := ProjectData{}
@@ -492,7 +493,7 @@ func Publish(configDir string, stackPath string, buildersPath string, telemetry 
 	}
 	project.Git = gitData
 
-	_, err = utils.SendTelemtry(telemetry, "stacks", &project)
+	_, err = utils.SendTelemtry(server, "stacks", &project)
 	if err != nil {
 		return err
 	}

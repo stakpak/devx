@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"devopzilla.com/guku/internal/auth"
 	"github.com/spf13/cobra"
 )
 
@@ -17,11 +18,11 @@ var (
 	showTransformers bool
 	dryRun           bool
 	noColor          bool
-	telemetry        string
 	strict           bool
 	verbosity        string
 	stdout           bool
 )
+var server = auth.ServerConfig{}
 
 var version = "DEV"
 var commit = "X"
@@ -33,7 +34,9 @@ type Version struct {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&verbosity, "verbosity", "v", "info", "log verbosity *info | debug | error")
-	rootCmd.PersistentFlags().StringVarP(&telemetry, "telemetry", "T", "", "telemetry endpoint")
+	rootCmd.PersistentFlags().BoolVarP(&server.Enable, "telemetry", "T", false, "enable sending telemetry to server")
+	rootCmd.PersistentFlags().StringVarP(&server.Endpoint, "server", "e", auth.DEVX_CLOUD_ENDPOINT, "server endpoint")
+	rootCmd.PersistentFlags().StringVarP(&server.Tenant, "tenant", "n", "", "server tenant")
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")
 	rootCmd.PersistentFlags().StringVarP(&gitDir, "git", "g", ".", "project git dir")
 	rootCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
@@ -67,6 +70,7 @@ func init() {
 		diffCmd,
 		reserveCmd,
 		runCmd,
+		loginCmd,
 	)
 
 	projectCmd.AddCommand(

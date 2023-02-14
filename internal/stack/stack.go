@@ -8,6 +8,7 @@ import (
 
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
+	"devopzilla.com/guku/internal/auth"
 	"devopzilla.com/guku/internal/gitrepo"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
@@ -225,7 +226,7 @@ type Reference struct {
 	Target string `json:"target"`
 }
 
-func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environment string) (string, error) {
+func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environment string) (string, error) {
 	build := BuildData{
 		Stack:       s.ID,
 		Identity:    "",
@@ -242,7 +243,7 @@ func (s *Stack) SendBuild(configDir string, telemetryEndpoint string, environmen
 	}
 	build.Git = gitData
 
-	data, err := utils.SendTelemtry(telemetryEndpoint, "builds", &build)
+	data, err := utils.SendTelemtry(server, "builds", &build)
 	if err != nil {
 		return "", err
 	}

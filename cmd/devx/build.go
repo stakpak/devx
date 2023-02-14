@@ -14,7 +14,7 @@ var buildCmd = &cobra.Command{
 	Args:    cobra.ExactArgs(1),
 	Aliases: []string{"do"},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := client.Run(args[0], configDir, stackPath, buildersPath, dryRun, telemetry, strict, stdout); err != nil {
+		if err := client.Run(args[0], configDir, stackPath, buildersPath, dryRun, server, strict, stdout); err != nil {
 			return fmt.Errorf(errors.Details(err, nil))
 		}
 		return nil

@@ -5,6 +5,7 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/gocode/gocodec"
+	"devopzilla.com/guku/internal/auth"
 	"devopzilla.com/guku/internal/utils"
 	log "github.com/sirupsen/logrus"
 )
@@ -26,9 +27,9 @@ type GlobalPolicyData struct {
 	IsDisabled   bool     `json:"disabled"`
 }
 
-func Publish(configDir string, telemetry string) error {
-	if telemetry == "" {
-		return fmt.Errorf("telemtry endpoint is required to publish policies")
+func Publish(configDir string, server auth.ServerConfig) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to publish policies")
 	}
 
 	overlays, err := utils.GetOverlays(configDir)
@@ -66,7 +67,7 @@ func Publish(configDir string, telemetry string) error {
 		}
 
 		policyData := GlobalPolicyData(policy)
-		response, err := utils.SendTelemtry(telemetry, "policies", policyData)
+		response, err := utils.SendTelemtry(server, "policies", policyData)
 		if err != nil {
 			log.Debug(string(response))
 			return err
