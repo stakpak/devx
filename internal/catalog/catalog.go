@@ -80,6 +80,11 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 				traits = append(traits, traitIter.Label())
 			}
 
+			catalogItemType := "Trait"
+			if len(traits) > 1 {
+				catalogItemType = "Component"
+			}
+
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
 				Package:      pkg,
@@ -92,7 +97,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 				},
 				Metadata: map[string]interface{}{
 					"traits": traits,
-					"type":   "Trait",
+					"type":   catalogItemType,
 				},
 			}
 			err = publishCatalogItem(server, &catalogItem)
@@ -132,6 +137,40 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 				Metadata: map[string]interface{}{
 					"components": componentsMeta,
 					"type":       "Stack",
+				},
+			}
+			err = publishCatalogItem(server, &catalogItem)
+			if err != nil {
+				return err
+			}
+		}
+
+		builderMeta := metadata.LookupPath(cue.ParsePath("builder"))
+		if builderMeta.Exists() {
+			traits := []string{}
+
+			flows := item.LookupPath(cue.ParsePath("flows"))
+			flowIter, _ := flows.Fields()
+			for flowIter.Next() {
+				traitIter, _ := flowIter.Value().LookupPath(cue.ParsePath("match.traits")).Fields()
+				for traitIter.Next() {
+					traits = append(traits, traitIter.Label())
+				}
+			}
+
+			data, _ := format.Node(item.Source())
+			catalogItem := CatalogItem{
+				Package:      pkg,
+				Dependencies: deps,
+				Source:       strings.TrimSpace(string(data)),
+				Name:         fieldIter.Label(),
+				Git: Git{
+					*projectGitData,
+					*gitData,
+				},
+				Metadata: map[string]interface{}{
+					"traits": traits,
+					"type":   "StackBuilder",
 				},
 			}
 			err = publishCatalogItem(server, &catalogItem)
