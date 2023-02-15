@@ -15,6 +15,7 @@ import (
 )
 
 type CatalogItem struct {
+	Module       string                 `json:"module"`
 	Dependencies []string               `json:"dependencies"`
 	Package      string                 `json:"package"`
 	Name         string                 `json:"name"`
@@ -40,6 +41,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	instances := utils.LoadInstances(configDir, &overlays)
 	instance := instances[0]
 
+	module := instance.Module
 	pkg := instance.ID()
 	deps := instance.Deps
 
@@ -87,6 +89,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
+				Module:       module,
 				Package:      pkg,
 				Dependencies: deps,
 				Source:       strings.TrimSpace(string(data)),
@@ -126,6 +129,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
+				Module:       module,
 				Package:      pkg,
 				Dependencies: deps,
 				Source:       strings.TrimSpace(string(data)),
@@ -160,6 +164,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
+				Module:       module,
 				Package:      pkg,
 				Dependencies: deps,
 				Source:       strings.TrimSpace(string(data)),
