@@ -262,11 +262,6 @@ func Update(configDir string) error {
 			return err
 		}
 
-		packageInfo, err := (*mfs).ReadDir(repoPath)
-		if err != nil {
-			return err
-		}
-
 		moduleFilePath := filepath.Join("cue.mod", "module.cue")
 		_, err = (*mfs).Lstat(moduleFilePath)
 		if err == nil {
@@ -284,7 +279,71 @@ func Update(configDir string) error {
 				return moduleName.Err()
 			}
 
-			log.Debug("Found module: ", moduleName)
+			modulePrefix, err := moduleName.String()
+			if err != nil {
+				return err
+			}
+
+			log.Debug("Module prefix: ", modulePrefix)
+			pkgDir := path.Join(configDir, "cue.mod", "pkg", modulePrefix)
+			log.Debug("Updating package ", pkgDir)
+			err = os.RemoveAll(pkgDir)
+			if err != nil {
+				return err
+			}
+
+			err = utils.FsWalk(*mfs, repoPath, func(file string, content []byte) error {
+				if strings.HasPrefix(file, ".") ||
+					strings.HasPrefix(file, "cue.mod") ||
+					// strings.HasPrefix(file, "pkg") ||
+					!strings.HasSuffix(file, ".cue") {
+					return nil
+				}
+
+				writePath := path.Join(pkgDir, file)
+				if err := os.MkdirAll(filepath.Dir(writePath), 0755); err != nil {
+					return err
+				}
+				return os.WriteFile(writePath, content, 0700)
+			})
+			if err != nil {
+				return err
+			}
+
+			log.Debugf("Updating packages %s dependencies", pkgDir)
+			if strings.HasPrefix(modulePrefix, "guku.io/devx") {
+				moduleDepPkgPath := path.Join("cue.mod", "pkg")
+				packageInfo, err := (*mfs).ReadDir(moduleDepPkgPath)
+				if err != nil {
+					return err
+				}
+
+				for _, info := range packageInfo {
+					pkgDir := path.Join(configDir, moduleDepPkgPath, info.Name())
+					log.Debug("Updating dependency ", pkgDir)
+					err = os.RemoveAll(pkgDir)
+					if err != nil {
+						return err
+					}
+
+					err = utils.FsWalk(*mfs, pkgDir, func(file string, content []byte) error {
+						if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+							return err
+						}
+						return os.WriteFile(file, content, 0700)
+					})
+					if err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+
+		// fallback to legacy package management
+		packageInfo, err := (*mfs).ReadDir(repoPath)
+		if err != nil {
+			return err
 		}
 
 		for _, info := range packageInfo {
