@@ -286,8 +286,9 @@ func Update(configDir string) error {
 
 			log.Debug("Module prefix: ", modulePrefix)
 			pkgDir := path.Join(configDir, "cue.mod", "pkg", modulePrefix)
-			log.Debug("Updating package ", pkgDir)
-			err = os.RemoveAll(pkgDir)
+			pkgSubDir := path.Join(pkgDir, repoPath)
+			log.Debug("Updating package ", pkgSubDir)
+			err = os.RemoveAll(pkgSubDir)
 			if err != nil {
 				return err
 			}
@@ -607,7 +608,7 @@ func Import(newPackage string, configDir string) error {
 		}
 	}
 
-	packages = append(packages, fmt.Sprintf("%s@%s/pkg", gitRepo, gitRevision))
+	packages = append(packages, fmt.Sprintf("%s@%s", gitRepo, gitRevision))
 
 	newcuemodule := ctx.CompileString("")
 	newcuemodule = newcuemodule.FillPath(cue.ParsePath("module"), cuemodule.LookupPath(cue.ParsePath("module")))
