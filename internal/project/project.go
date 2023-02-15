@@ -337,7 +337,8 @@ func Update(configDir string) error {
 					}
 				}
 			}
-			return nil
+
+			continue
 		}
 
 		// fallback to legacy package management
