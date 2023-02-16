@@ -21,7 +21,7 @@ import (
 	"devopzilla.com/guku/internal/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, dryRun bool, server auth.ServerConfig, strict bool, stdout bool) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, reserve bool, dryRun bool, server auth.ServerConfig, strict bool, stdout bool) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
@@ -37,8 +37,16 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 			return err
 		}
 		log.Infof("\nCreated build at %s/builds/%s", server.Endpoint, buildId)
-		log.Info("To reserve build resources run:")
-		log.Infof("devx reserve %s --telemetry %s\n", buildId, server.Endpoint)
+
+		if reserve {
+			err := Reserve(buildId, server, dryRun)
+			if err != nil {
+				return err
+			}
+		} else {
+			log.Info("To reserve build resources run:")
+			log.Infof("devx reserve %s -T -e %s\n", buildId, server.Endpoint)
+		}
 	}
 
 	if dryRun {
@@ -213,6 +221,23 @@ func Reserve(buildId string, server auth.ServerConfig, dryRun bool) error {
 	}
 
 	log.Infof("Reserved build with id %s", buildId)
+
+	return nil
+}
+
+func Retire(buildId string, server auth.ServerConfig) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to retire resources")
+	}
+
+	apiPath := path.Join("builds", buildId, "retire")
+	data, err := utils.SendTelemtry(server, apiPath, map[string]interface{}{})
+	if err != nil {
+		log.Debug(string(data))
+		return err
+	}
+
+	log.Infof("Retired build with id %s", buildId)
 
 	return nil
 }

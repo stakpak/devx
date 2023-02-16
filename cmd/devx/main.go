@@ -21,6 +21,7 @@ var (
 	strict           bool
 	verbosity        string
 	stdout           bool
+	reserve          bool
 )
 var server = auth.ServerConfig{}
 
@@ -43,6 +44,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colors")
 	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "S", false, "make sure all traits are fulfilled by at least one flow")
+	buildCmd.PersistentFlags().BoolVarP(&reserve, "reserve", "r", false, "reserve build resources")
 	buildCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "d", false, "output the entire stack after transformation without applying drivers")
 	buildCmd.PersistentFlags().BoolVarP(&stdout, "stdout", "o", false, "output result to stdout")
 	discoverCmd.PersistentFlags().BoolVarP(&showDefs, "definitions", "d", false, "show definitions")
@@ -71,6 +73,7 @@ func init() {
 		reserveCmd,
 		runCmd,
 		loginCmd,
+		retireCmd,
 	)
 
 	projectCmd.AddCommand(
