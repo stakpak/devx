@@ -6,10 +6,17 @@ import (
 
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 )
 
 type ProjectGitData struct {
-	Remotes []GitRemote `json:"remotes"`
+	Remotes      []GitRemote   `json:"remotes"`
+	Contributors []Contributor `json:"contributors"`
+}
+type Contributor struct {
+	Name    string `json:"name"`
+	Email   string `json:"email"`
+	Commits uint   `json:"commits"`
 }
 type GitRemote struct {
 	URL      string   `json:"url"`
@@ -37,7 +44,8 @@ func GetProjectGitData(configDir string) (*ProjectGitData, error) {
 	}
 
 	gitData := ProjectGitData{
-		Remotes: []GitRemote{},
+		Remotes:      []GitRemote{},
+		Contributors: []Contributor{},
 	}
 	remotes, err := repo.Remotes()
 	if err != nil {
@@ -49,12 +57,17 @@ func GetProjectGitData(configDir string) (*ProjectGitData, error) {
 		branches := []string{}
 		tags := []string{}
 
+		var mainBranch *plumbing.Reference
+
 		refIter, _ := repo.References()
 		refIter.ForEach(func(r *plumbing.Reference) error {
 			if r.Name().IsRemote() {
 				branch := r.Name().Short()
 				if strings.HasPrefix(branch, remotePrefix) && !strings.HasSuffix(branch, "HEAD") {
 					branches = append(branches, strings.TrimPrefix(branch, remotePrefix))
+					if strings.HasSuffix(r.Name().Short(), "main") || strings.HasSuffix(r.Name().Short(), "master") {
+						mainBranch = r
+					}
 				}
 			}
 			if r.Name().IsTag() {
@@ -62,6 +75,49 @@ func GetProjectGitData(configDir string) (*ProjectGitData, error) {
 			}
 			return nil
 		})
+
+		contributors := map[string]Contributor{}
+		if mainBranch != nil {
+			cIter, err := repo.Log(&git.LogOptions{From: mainBranch.Hash()})
+			if err != nil {
+				return nil, err
+			}
+			cIter.ForEach(func(c *object.Commit) error {
+				commiter := c.Committer.Email
+				author := c.Author.Email
+
+				contr, ok := contributors[commiter]
+				if ok {
+					contr.Commits += 1
+					contributors[commiter] = contr
+				} else {
+					contributors[commiter] = Contributor{
+						Name:    c.Committer.Name,
+						Email:   c.Committer.Email,
+						Commits: 1,
+					}
+				}
+
+				if author != commiter {
+					contr, ok := contributors[author]
+					if ok {
+						contr.Commits += 1
+						contributors[author] = contr
+					} else {
+						contributors[author] = Contributor{
+							Name:    c.Author.Name,
+							Email:   c.Author.Email,
+							Commits: 1,
+						}
+					}
+				}
+				return nil
+			})
+		}
+
+		for _, contr := range contributors {
+			gitData.Contributors = append(gitData.Contributors, contr)
+		}
 
 		gitData.Remotes = append(gitData.Remotes, GitRemote{
 			URL:      url,
