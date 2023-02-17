@@ -17,7 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DEVX_CLOUD_ENDPOINT = "http://localhost:8000"
+const DEVX_CLOUD_ENDPOINT = "https://devxhub.guku.io"
 
 type ServerConfig struct {
 	Enable   bool
