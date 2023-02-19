@@ -181,29 +181,21 @@ stack: v1.#Stack & {
 			}
 		}
 	}
-}	
-	`), 0700)
+}
+`), 0700)
 
 	builderPath := path.Join(configDir, "builder.cue")
 	os.WriteFile(builderPath, []byte(`package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/transformers/compose"
+	"guku.io/devx/v2alpha1"
+	"guku.io/devx/v2alpha1/environments"
 )
 
-builders: v1.#StackBuilder & {
-	dev: {
-		mainflows: [
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposeService & {},
-				]
-			},
-		]
-	}
-}	
-	`), 0700)
+builders: v2alpha1.#Environments & {
+	dev: environments.#Compose
+}
+`), 0700)
 
 	return nil
 }
