@@ -1,7 +1,7 @@
 package main
 
 import (
-	"devopzilla.com/guku/internal/auth"
+	"devopzilla.com/guku-devx/pkg/auth"
 	"github.com/spf13/cobra"
 )
 

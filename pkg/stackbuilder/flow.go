@@ -8,8 +8,8 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
-	"devopzilla.com/guku/internal/stack"
-	"devopzilla.com/guku/internal/utils"
+	"devopzilla.com/guku-devx/pkg/stack"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

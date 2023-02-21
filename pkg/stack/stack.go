@@ -8,9 +8,9 @@ import (
 
 	"cuelang.org/go/cue"
 	cueflow "cuelang.org/go/tools/flow"
-	"devopzilla.com/guku/internal/auth"
-	"devopzilla.com/guku/internal/gitrepo"
-	"devopzilla.com/guku/internal/utils"
+	"devopzilla.com/guku-devx/pkg/auth"
+	"devopzilla.com/guku-devx/pkg/gitrepo"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

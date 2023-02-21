@@ -2,8 +2,8 @@ package drivers
 
 import (
 	"cuelang.org/go/cue"
-	"devopzilla.com/guku/internal/stack"
-	"devopzilla.com/guku/internal/stackbuilder"
+	"devopzilla.com/guku-devx/pkg/stack"
+	"devopzilla.com/guku-devx/pkg/stackbuilder"
 )
 
 type Driver interface {

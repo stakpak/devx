@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue/errors"
-	"devopzilla.com/guku/internal/client"
+	"devopzilla.com/guku-devx/pkg/client"
 	"github.com/spf13/cobra"
 )
 

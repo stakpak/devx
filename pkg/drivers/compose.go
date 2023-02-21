@@ -1,29 +1,29 @@
 package drivers
 
 import (
-	"encoding/json"
 	"os"
 	"path"
 
 	"cuelang.org/go/cue"
-	"devopzilla.com/guku/internal/stack"
-	"devopzilla.com/guku/internal/stackbuilder"
-	"devopzilla.com/guku/internal/utils"
+	"cuelang.org/go/encoding/yaml"
+	"devopzilla.com/guku-devx/pkg/stack"
+	"devopzilla.com/guku-devx/pkg/stackbuilder"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-type TerraformDriver struct {
+type ComposeDriver struct {
 	Config stackbuilder.DriverConfig
 }
 
-func (d *TerraformDriver) match(resource cue.Value) bool {
+func (d *ComposeDriver) match(resource cue.Value) bool {
 	driverName, _ := resource.LookupPath(cue.ParsePath("$metadata.labels.driver")).String()
-	return driverName == "terraform"
+	return driverName == "compose"
 }
 
-func (d *TerraformDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
+func (d *ComposeDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 
-	terraformFile := stack.GetContext().CompileString("_")
+	composeFile := stack.GetContext().CompileString("_")
 	foundResources := false
 
 	for _, componentId := range stack.GetTasks() {
@@ -33,7 +33,7 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		for resourceIter.Next() {
 			if d.match(resourceIter.Value()) {
 				foundResources = true
-				terraformFile = terraformFile.Fill(resourceIter.Value())
+				composeFile = composeFile.Fill(resourceIter.Value())
 			}
 		}
 	}
@@ -42,21 +42,17 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		return nil
 	}
 
-	terraformFile, err := utils.RemoveMeta(terraformFile)
+	composeFile, err := utils.RemoveMeta(composeFile)
 	if err != nil {
 		return err
 	}
-	data, err := json.MarshalIndent(terraformFile, "", "  ")
+	data, err := yaml.Encode(composeFile)
 	if err != nil {
 		return err
 	}
 
 	if stdout {
 		_, err := os.Stdout.Write(data)
-		if err != nil {
-			return err
-		}
-		_, err = os.Stdout.Write([]byte("\n"))
 		return err
 	}
 
@@ -66,7 +62,7 @@ func (d *TerraformDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
 	os.WriteFile(filePath, data, 0700)
 
-	log.Infof("[terraform] applied resources to \"%s\"", filePath)
+	log.Infof("[compose] applied resources to \"%s\"", filePath)
 
 	return nil
 }

@@ -8,9 +8,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
-	"devopzilla.com/guku/internal/stack"
-	"devopzilla.com/guku/internal/stackbuilder"
-	"devopzilla.com/guku/internal/utils"
+	"devopzilla.com/guku-devx/pkg/stack"
+	"devopzilla.com/guku-devx/pkg/stackbuilder"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

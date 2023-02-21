@@ -5,8 +5,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/gocode/gocodec"
-	"devopzilla.com/guku/internal/auth"
-	"devopzilla.com/guku/internal/utils"
+	"devopzilla.com/guku-devx/pkg/auth"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

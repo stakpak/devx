@@ -1,33 +1,37 @@
 package drivers
 
 import (
+	"fmt"
 	"os"
 	"path"
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
-	"devopzilla.com/guku/internal/stack"
-	"devopzilla.com/guku/internal/stackbuilder"
-	"devopzilla.com/guku/internal/utils"
+	"devopzilla.com/guku-devx/pkg/stack"
+	"devopzilla.com/guku-devx/pkg/stackbuilder"
+	"devopzilla.com/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 
-type GitlabDriver struct {
+type GitHubDriver struct {
 	Config stackbuilder.DriverConfig
 }
 
-func (d *GitlabDriver) match(resource cue.Value) bool {
+func (d *GitHubDriver) match(resource cue.Value) bool {
 	driverName, _ := resource.LookupPath(cue.ParsePath("$metadata.labels.driver")).String()
-	return driverName == "gitlab"
+	return driverName == "github"
 }
 
-func (d *GitlabDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
+func (d *GitHubDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
+	foundResources := false
+
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
 
 		resourceIter, _ := component.LookupPath(cue.ParsePath("$resources")).Fields()
 		for resourceIter.Next() {
 			if d.match(resourceIter.Value()) {
+				foundResources = true
 				resource, err := utils.RemoveMeta(resourceIter.Value())
 				if err != nil {
 					return err
@@ -49,13 +53,21 @@ func (d *GitlabDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 				if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
 					os.MkdirAll(d.Config.Output.Dir, 0700)
 				}
-				filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
+				fileName := fmt.Sprintf("%s-github-workflow.yml", resourceIter.Label())
+				if d.Config.Output.File != "" {
+					fileName = d.Config.Output.File
+				}
+				filePath := path.Join(d.Config.Output.Dir, fileName)
 				os.WriteFile(filePath, data, 0700)
-
-				log.Infof("[gitlab] applied a resource to \"%s\"", filePath)
 			}
 		}
 	}
+
+	if !foundResources {
+		return nil
+	}
+
+	log.Infof("[github] applied resources to \"%s/*-github-workflow.yml\"", d.Config.Output.Dir)
 
 	return nil
 }
