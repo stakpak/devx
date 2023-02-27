@@ -29,5 +29,11 @@ func NewDriversMap(environment string, config map[string]stackbuilder.DriverConf
 		"github": &GitHubDriver{
 			Config: config["github"],
 		},
+		"yaml": &YAMLDriver{
+			Config: config["yaml"],
+		},
+		"json": &JSONDriver{
+			Config: config["json"],
+		},
 	}
 }
