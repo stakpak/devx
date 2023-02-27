@@ -151,15 +151,20 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 		builderMeta := metadata.LookupPath(cue.ParsePath("builder"))
 		if builderMeta.Exists() {
-			traits := []string{}
+			traitsMap := map[string]interface{}{}
 
 			flows := item.LookupPath(cue.ParsePath("flows"))
 			flowIter, _ := flows.Fields()
 			for flowIter.Next() {
 				traitIter, _ := flowIter.Value().LookupPath(cue.ParsePath("match.traits")).Fields()
 				for traitIter.Next() {
-					traits = append(traits, traitIter.Label())
+					traitsMap[traitIter.Label()] = nil
 				}
+			}
+
+			traits := []string{}
+			for trait := range traitsMap {
+				traits = append(traits, trait)
 			}
 
 			data, _ := format.Node(item.Source())
