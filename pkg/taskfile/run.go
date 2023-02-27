@@ -45,8 +45,17 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 		return err
 	}
 	value, _, _ := utils.LoadProject(configDir, &overlays)
+	err = value.Validate()
+	if err != nil {
+		return err
+	}
 
-	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
+	buildersValue := value.LookupPath(cue.ParsePath(buildersPath))
+	if buildersValue.Exists() {
+		return fmt.Errorf("missing builders field")
+	}
+
+	builders, err := stackbuilder.NewEnvironments(buildersValue)
 	if err != nil {
 		return err
 	}
