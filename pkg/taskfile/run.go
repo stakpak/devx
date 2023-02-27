@@ -56,6 +56,10 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 		return fmt.Errorf("environment %s was not found", environment)
 	}
 
+	if builder.Taskfile == nil {
+		return fmt.Errorf("no taskfile definition found in environment %s", environment)
+	}
+
 	log.Debug(builder.Taskfile)
 	err = builder.Taskfile.Validate(cue.Concrete(true))
 	if err != nil {
