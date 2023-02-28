@@ -52,21 +52,21 @@ You create a stack to define the workload and its dependencies.
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/traits"
+    "guku.io/devx/v1"
+    "guku.io/devx/v1/traits"
 )
 
 stack: v1.#Stack & {
-	components: {
-		cowsay: {
-			traits.#Workload
-			containers: default: {
-				image: "docker/whalesay"
-				command: ["cowsay"]
-				args: ["Hello DevX!"]
-			}
-		}
-	}
+    components: {
+        cowsay: {
+            traits.#Workload
+            containers: default: {
+                image: "docker/whalesay"
+                command: ["cowsay"]
+                args: ["Hello DevX!"]
+            }
+        }
+    }
 }
 ```
 
@@ -76,20 +76,12 @@ You can customize how the stack is processed by writing declarative transformers
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/transformers/compose"
+    "guku.io/devx/v2alpha1"
+    "guku.io/devx/v2alpha1/environments"
 )
 
-builders: v1.#StackBuilder & {
-	dev: {
-		mainflows: [
-			v1.#Flow & {
-				pipeline: [
-					compose.#AddComposeService & {},
-				]
-			},
-		]
-	}
+builders: v2alpha1.#Environments & {
+    dev: environments.#Compose
 }
 ```
 
@@ -132,12 +124,11 @@ You can publish and share CUE packages directly through git repositories.
 Create a new repository to store your packages (you can host multiple packages per repository).
 
 ```bash
-pkg
-└── domain.com
-    └── package1
-        ├── cue.mod
-        |   └── module.cue # module: "domain.com/package1"
-        └── file.cue
+cue.mod
+└── module.cue # module: "domain.com/platform"
+subpackage
+└── file.cue
+file.cue
 ```
 
 ### Add the package to `module.cue`
@@ -145,20 +136,14 @@ pkg
 module: ""
 
 packages: [
-  "github.com/<org name>/<repo name>@<revision>/pkg/domain.com",
-]		
+  "github.com/<org name>/<repo name>@<git revision>:",
+]       	
 ```
 
 ### For private packages (optional)
 ```bash
 export GIT_USERNAME="username"
 export GIT_PASSWORD="password"
-```
-or
-```bash
-export GIT_PRIVATE_KEY_FILE="path/to/key"
-export GIT_PRIVATE_KEY_FILE_PASSWORD="password"
-
 ```
 
 ### Update packages (pulling updates will replace existing packages)
