@@ -150,3 +150,31 @@ export GIT_PASSWORD="password"
 ```
 ➜ devx project update
 ```
+
+## Contributors
+
+<table>
+<tr>
+    <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
+        <a href=https://github.com/kajogo777>
+            <img src=https://avatars.githubusercontent.com/u/10531031?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=George/>
+            <br />
+            <sub style="font-size:14px"><b>George</b></sub>
+        </a>
+    </td>
+    <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
+        <a href=https://github.com/thethumbler>
+            <img src=https://avatars.githubusercontent.com/u/3092919?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Mohamed Hamza/>
+            <br />
+            <sub style="font-size:14px"><b>Mohamed Hamza</b></sub>
+        </a>
+    </td>
+    <td align="center" style="word-wrap: break-word; width: 150.0; height: 150.0">
+        <a href=https://github.com/tranngoclam>
+            <img src=https://avatars.githubusercontent.com/u/4991619?v=4 width="100;"  style="border-radius:50%;align-items:center;justify-content:center;overflow:hidden;padding-top:10px" alt=Lam Tran/>
+            <br />
+            <sub style="font-size:14px"><b>Lam Tran</b></sub>
+        </a>
+    </td>
+</tr>
+</table>
