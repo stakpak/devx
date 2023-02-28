@@ -51,7 +51,7 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 	}
 
 	buildersValue := value.LookupPath(cue.ParsePath(buildersPath))
-	if buildersValue.Exists() {
+	if !buildersValue.Exists() {
 		return fmt.Errorf("missing builders field")
 	}
 
