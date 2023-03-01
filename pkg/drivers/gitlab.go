@@ -6,9 +6,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/yaml"
-	"devopzilla.com/guku-devx/pkg/stack"
-	"devopzilla.com/guku-devx/pkg/stackbuilder"
-	"devopzilla.com/guku-devx/pkg/utils"
+	"github.com/devopzilla/guku-devx/pkg/stack"
+	"github.com/devopzilla/guku-devx/pkg/stackbuilder"
+	"github.com/devopzilla/guku-devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

@@ -21,7 +21,7 @@ import (
 	"cuelang.org/go/cue/build"
 	"cuelang.org/go/cue/cuecontext"
 	cueload "cuelang.org/go/cue/load"
-	"devopzilla.com/guku-devx/pkg/auth"
+	"github.com/devopzilla/guku-devx/pkg/auth"
 	"github.com/go-git/go-billy/v5"
 	log "github.com/sirupsen/logrus"
 	"gopkg.in/yaml.v3"

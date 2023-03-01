@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"devopzilla.com/guku-devx/pkg/auth"
+	"github.com/devopzilla/guku-devx/pkg/auth"
 	"github.com/spf13/cobra"
 )
 

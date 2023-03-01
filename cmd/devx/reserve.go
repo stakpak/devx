@@ -1,7 +1,7 @@
 package main
 
 import (
-	"devopzilla.com/guku-devx/pkg/client"
+	"github.com/devopzilla/guku-devx/pkg/client"
 	"github.com/spf13/cobra"
 )
 

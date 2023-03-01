@@ -1,4 +1,4 @@
-module devopzilla.com/guku-devx
+module github.com/devopzilla/guku-devx
 
 go 1.18
 

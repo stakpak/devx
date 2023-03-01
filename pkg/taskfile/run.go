@@ -10,8 +10,8 @@ import (
 	"cuelang.org/go/cue"
 	cueyaml "cuelang.org/go/encoding/yaml"
 
-	"devopzilla.com/guku-devx/pkg/stackbuilder"
-	"devopzilla.com/guku-devx/pkg/utils"
+	"github.com/devopzilla/guku-devx/pkg/stackbuilder"
+	"github.com/devopzilla/guku-devx/pkg/utils"
 
 	"mvdan.cc/sh/v3/syntax"
 

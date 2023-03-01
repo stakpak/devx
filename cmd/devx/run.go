@@ -1,7 +1,7 @@
 package main
 
 import (
-	"devopzilla.com/guku-devx/pkg/taskfile"
+	"github.com/devopzilla/guku-devx/pkg/taskfile"
 	"github.com/spf13/cobra"
 )
 
