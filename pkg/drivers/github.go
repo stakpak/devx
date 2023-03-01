@@ -53,7 +53,7 @@ func (d *GitHubDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 				if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
 					os.MkdirAll(d.Config.Output.Dir, 0700)
 				}
-				fileName := fmt.Sprintf("%s-github-workflow.yml", resourceIter.Label())
+				fileName := fmt.Sprintf("%s.yml", resourceIter.Label())
 				if d.Config.Output.File != "" {
 					fileName = d.Config.Output.File
 				}
