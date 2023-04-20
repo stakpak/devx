@@ -74,6 +74,41 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 			continue
 		}
 
+		transformedMeta := metadata.LookupPath(cue.ParsePath("transformed"))
+		if transformedMeta.Exists() && transformedMeta.IsConcrete() {
+			if isTransformed, _ := transformedMeta.Bool(); isTransformed {
+
+				traitMeta := metadata.LookupPath(cue.ParsePath("traits"))
+				traits := []string{}
+				traitIter, _ := traitMeta.Fields()
+				for traitIter.Next() {
+					traits = append(traits, traitIter.Label())
+				}
+
+				data, _ := format.Node(item.Source())
+				catalogItem := CatalogItem{
+					Module:       module,
+					Package:      pkg,
+					Dependencies: deps,
+					Source:       strings.TrimSpace(string(data)),
+					Name:         fieldIter.Label(),
+					Git: Git{
+						*projectGitData,
+						*gitData,
+					},
+					Metadata: map[string]interface{}{
+						"traits": traits,
+						"type":   "Transformer",
+					},
+				}
+				err = publishCatalogItem(server, &catalogItem)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+		}
+
 		traitMeta := metadata.LookupPath(cue.ParsePath("traits"))
 		if traitMeta.Exists() {
 			traits := []string{}
