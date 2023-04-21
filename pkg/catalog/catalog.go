@@ -27,6 +27,13 @@ type Git struct {
 	gitrepo.ProjectGitData
 	gitrepo.GitData
 }
+type PackageItem struct {
+	Module       string   `json:"module"`
+	Dependencies []string `json:"dependencies"`
+	Package      string   `json:"package"`
+	Source       string   `json:"source"`
+	Git          Git      `json:"git"`
+}
 
 func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	if !server.Enable {
@@ -61,6 +68,25 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	}
 	if gitData == nil {
 		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
+	}
+
+	packageCode, err := format.Node(value.Syntax(cue.All(), cue.InlineImports(true)))
+	if packageCode == nil {
+		return fmt.Errorf("failed to serialize package code: %s", err)
+	}
+	packageItem := PackageItem{
+		Module:       module,
+		Package:      pkg,
+		Dependencies: deps,
+		Source:       string(packageCode),
+		Git: Git{
+			*projectGitData,
+			*gitData,
+		},
+	}
+	err = publishPackage(server, &packageItem)
+	if err != nil {
+		return err
 	}
 
 	fieldIter, err := value.Fields(cue.Definitions(true))
@@ -237,6 +263,18 @@ func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) erro
 	}
 
 	log.Infof("🚀 Published %s %s successfully", catalogItem.Package, catalogItem.Name)
+
+	return nil
+}
+
+func publishPackage(server auth.ServerConfig, packageItem *PackageItem) error {
+	data, err := utils.SendTelemtry(server, "package", packageItem)
+	if err != nil {
+		log.Debug(string(data))
+		return err
+	}
+
+	log.Infof("📦 Published package %s successfully", packageItem.Package)
 
 	return nil
 }
