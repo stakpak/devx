@@ -4,9 +4,12 @@ import (
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/go-git/go-git/v5/plumbing/object"
+	"golang.org/x/mod/semver"
 )
 
 type ProjectGitData struct {
@@ -31,6 +34,7 @@ type GitData struct {
 	Time    time.Time `json:"time"`
 	IsClean bool      `json:"clean"`
 	Parents []string  `json:"parents"`
+	Tags    []string  `json:"tags"`
 }
 
 func GetProjectGitData(configDir string) (*ProjectGitData, error) {
@@ -164,6 +168,19 @@ func GetGitData(configDir string) (*GitData, error) {
 
 	isClean := status.IsClean()
 
+	tags := []string{}
+	tagRefs, _ := repo.Tags()
+	tagRefs.ForEach(func(t *plumbing.Reference) error {
+		if t.Hash() == ref.Hash() {
+			tagName := t.Name().Short()
+			if semver.IsValid(tagName) {
+				log.Warnf("Skipping an invalid tag %s that is not a valid semantic version, please check https://semver.org/", tagName)
+				tags = append(tags, tagName)
+			}
+		}
+		return nil
+	})
+
 	return &GitData{
 		IsClean: isClean,
 		Commit:  commit.ID().String(),
@@ -172,5 +189,6 @@ func GetGitData(configDir string) (*GitData, error) {
 		Time:    commit.Author.When,
 		Parents: parents,
 		Branch:  ref.Name().Short(),
+		Tags:    tags,
 	}, nil
 }

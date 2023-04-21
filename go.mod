@@ -5,6 +5,7 @@ go 1.18
 require (
 	cuelang.org/go v0.4.3
 	github.com/go-git/go-billy/v5 v5.3.1
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4
 	mvdan.cc/sh/v3 v3.6.0
 )
 
@@ -34,7 +35,7 @@ require (
 	github.com/sergi/go-diff v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/xanzy/ssh-agent v0.3.0 // indirect
-	golang.org/x/crypto v0.0.0-20210421170649-83a5a9bb288b // indirect
+	golang.org/x/crypto v0.0.0-20210921155107-089bfa567519 // indirect
 	golang.org/x/exp v0.0.0-20220930202632-ec3f01382ef9 // indirect
 	golang.org/x/sync v0.1.0 // indirect
 	golang.org/x/sys v0.3.0 // indirect
