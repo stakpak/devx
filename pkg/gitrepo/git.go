@@ -174,8 +174,9 @@ func GetGitData(configDir string) (*GitData, error) {
 		if t.Hash() == ref.Hash() {
 			tagName := t.Name().Short()
 			if semver.IsValid(tagName) {
-				log.Warnf("Skipping an invalid tag %s that is not a valid semantic version, please check https://semver.org/", tagName)
 				tags = append(tags, tagName)
+			} else {
+				log.Warnf("Skipping an invalid tag %s that is not a valid semantic version, please check https://semver.org/", tagName)
 			}
 		}
 		return nil
