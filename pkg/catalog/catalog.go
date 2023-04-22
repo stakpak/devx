@@ -5,6 +5,9 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+
+	"cuelang.org/go/cue/ast"
+	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	log "github.com/sirupsen/logrus"
@@ -70,10 +73,27 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
 	}
 
-	packageCode, err := format.Node(value.Syntax(cue.All(), cue.InlineImports(true)))
-	if packageCode == nil {
+	node := value.Syntax(cue.All(), cue.InlineImports(true))
+	node = astutil.Apply(node, func(c astutil.Cursor) bool {
+		switch n := c.Node().(type) {
+		case *ast.BottomLit:
+			// remove bottom comments because they break text formatting
+			ast.SetComments(n, []*ast.CommentGroup{})
+		}
+		return true
+	}, nil)
+
+	packageCode, err := format.Node(node, format.Simplify())
+	if err != nil {
 		return fmt.Errorf("failed to serialize package code: %s", err)
 	}
+
+	// make sure the AST is valid
+	_, err = format.Source([]byte(packageCode))
+	if err != nil {
+		return fmt.Errorf("failed to serialize package code: %s", err)
+	}
+
 	packageItem := PackageItem{
 		Module:       module,
 		Package:      pkg,
@@ -256,7 +276,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 }
 
 func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) error {
-	data, err := utils.SendTelemtry(server, "catalog", catalogItem)
+	data, err := utils.SendData(server, "catalog", catalogItem)
 	if err != nil {
 		log.Debug(string(data))
 		return err
@@ -268,13 +288,17 @@ func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) erro
 }
 
 func publishPackage(server auth.ServerConfig, packageItem *PackageItem) error {
-	data, err := utils.SendTelemtry(server, "package", packageItem)
+	data, err := utils.SendData(server, "package", packageItem)
 	if err != nil {
 		log.Debug(string(data))
 		return err
 	}
 
-	log.Infof("📦 Published package %s successfully", packageItem.Package)
+	if len(packageItem.Git.Tags) > 0 {
+		log.Infof("📦 Published package %s@%s successfully", packageItem.Package, packageItem.Git.Tags[0])
+	} else {
+		log.Infof("📦 Published package %s successfully", packageItem.Package)
+	}
 
 	return nil
 }

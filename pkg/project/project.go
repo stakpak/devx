@@ -3,6 +3,7 @@ package project
 import (
 	"bufio"
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -15,6 +16,7 @@ import (
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	"github.com/devopzilla/guku-devx/pkg/auth"
+	"github.com/devopzilla/guku-devx/pkg/catalog"
 	"github.com/devopzilla/guku-devx/pkg/gitrepo"
 	"github.com/devopzilla/guku-devx/pkg/stack"
 	"github.com/devopzilla/guku-devx/pkg/stackbuilder"
@@ -200,7 +202,7 @@ builders: v2alpha1.#Environments & {
 	return nil
 }
 
-func Update(configDir string) error {
+func Update(configDir string, server auth.ServerConfig) error {
 	cuemodulePath := path.Join(configDir, "cue.mod", "module.cue")
 	data, err := os.ReadFile(cuemodulePath)
 	if err != nil {
@@ -225,7 +227,50 @@ func Update(configDir string) error {
 	}
 
 	for _, pkg := range packages {
-		repoURL, repoRevision, repoPath, err := parsePackage(pkg)
+		if strings.HasPrefix(pkg, "stakpak://") {
+			packageName, packageRevision, err := parseStakpakPackage(pkg)
+			if err != nil {
+				return err
+			}
+
+			log.Infof("📦 Downloading %s@%s", packageName, packageRevision)
+
+			data, err := utils.GetData(
+				server,
+				path.Join("package", "fetch"),
+				nil,
+				map[string]string{
+					"name":    packageName,
+					"version": packageRevision,
+				},
+			)
+			if err != nil {
+				return err
+			}
+			packageItem := catalog.PackageItem{}
+			err = json.Unmarshal(data, &packageItem)
+			if err != nil {
+				return err
+			}
+
+			pkgDir := path.Join(configDir, "cue.mod", "pkg", packageName)
+			err = os.RemoveAll(pkgDir)
+			if err != nil {
+				return err
+			}
+
+			if err := os.MkdirAll(pkgDir, 0755); err != nil {
+				return err
+			}
+
+			if err != os.WriteFile(filepath.Join(pkgDir, "main.cue"), []byte(packageItem.Source), 0700) {
+				return err
+			}
+
+			continue
+		}
+
+		repoURL, repoRevision, repoPath, err := parseGitPackage(pkg)
 		if err != nil {
 			return err
 		}
@@ -366,7 +411,7 @@ func Update(configDir string) error {
 	return nil
 }
 
-func parsePackage(pkg string) (string, string, string, error) {
+func parseGitPackage(pkg string) (string, string, string, error) {
 	parts := strings.SplitN(pkg, "@", 2)
 	if len(parts) < 2 {
 		return "", "", "", fmt.Errorf("no revision specified")
@@ -383,6 +428,18 @@ func parsePackage(pkg string) (string, string, string, error) {
 	path := remparts[1]
 
 	return url, revision, path, nil
+}
+
+func parseStakpakPackage(pkg string) (string, string, error) {
+	parts := strings.SplitN(strings.TrimPrefix(pkg, "stakpak://"), "@", 2)
+	if len(parts) < 2 {
+		return "", "", fmt.Errorf("no revision specified")
+	}
+
+	pkgName := parts[0]
+	pkgRevision := parts[1]
+
+	return pkgName, pkgRevision, nil
 }
 
 func getRepo(repoURL string) (*git.Repository, *billy.Filesystem, error) {
@@ -546,7 +603,7 @@ func Publish(configDir string, stackPath string, buildersPath string, server aut
 	}
 	project.Git = gitData
 
-	_, err = utils.SendTelemtry(server, "stacks", &project)
+	_, err = utils.SendData(server, "stacks", &project)
 	if err != nil {
 		return err
 	}
@@ -556,7 +613,7 @@ func Publish(configDir string, stackPath string, buildersPath string, server aut
 	return nil
 }
 
-func Import(newPackage string, configDir string) error {
+func Import(newPackage string, configDir string, server auth.ServerConfig) error {
 	pkgParts := strings.Split(newPackage, "@")
 	if len(pkgParts) < 2 {
 		return fmt.Errorf("invalid package format, expected \"<git repo>@<git revision>\"")
@@ -614,7 +671,7 @@ func Import(newPackage string, configDir string) error {
 		return err
 	}
 
-	err = Update(configDir)
+	err = Update(configDir, server)
 	if err != nil {
 		log.Error(err.Error())
 		return errors.New("failed to update packages, fix this issue and re-run devx project update")

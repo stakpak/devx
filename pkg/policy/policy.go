@@ -67,7 +67,7 @@ func Publish(configDir string, server auth.ServerConfig) error {
 		}
 
 		policyData := GlobalPolicyData(policy)
-		response, err := utils.SendTelemtry(server, "policies", policyData)
+		response, err := utils.SendData(server, "policies", policyData)
 		if err != nil {
 			log.Debug(string(response))
 			return err

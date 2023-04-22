@@ -32,7 +32,7 @@ var updateCmd = &cobra.Command{
 	Use:   "update",
 	Short: "Update/Install project dependencies",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Update(configDir); err != nil {
+		if err := project.Update(configDir, server); err != nil {
 			return err
 		}
 		return nil
@@ -117,7 +117,7 @@ var importCmd = &cobra.Command{
 	Short: "Import a dependency",
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Import(args[0], configDir); err != nil {
+		if err := project.Import(args[0], configDir, server); err != nil {
 			return err
 		}
 		return nil

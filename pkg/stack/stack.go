@@ -243,7 +243,7 @@ func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environmen
 	}
 	build.Git = gitData
 
-	data, err := utils.SendTelemtry(server, "builds", &build)
+	data, err := utils.SendData(server, "builds", &build)
 	if err != nil {
 		return "", err
 	}

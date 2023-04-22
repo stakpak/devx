@@ -322,7 +322,31 @@ func GetLeaves(value cue.Value, skipReserved bool) []Leaf {
 	return result
 }
 
-func SendTelemtry(server auth.ServerConfig, apiPath string, data interface{}) ([]byte, error) {
+func addAuthHeader(server auth.ServerConfig, request *http.Request) error {
+	var tenant string
+	var token *string
+	var err error
+	if server.Tenant == "" {
+		tenant, token, err = auth.GetDefaultToken()
+		if err != nil {
+			return err
+		}
+	} else {
+		tenant = server.Tenant
+		token, err = auth.GetToken(server)
+		if err != nil {
+			return err
+		}
+	}
+	if token == nil {
+		return fmt.Errorf("was not able to get credentials for tenant %s", tenant)
+	}
+	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *token))
+
+	return nil
+}
+
+func SendData(server auth.ServerConfig, apiPath string, data interface{}) ([]byte, error) {
 	dataJSON, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
@@ -343,24 +367,65 @@ func SendTelemtry(server auth.ServerConfig, apiPath string, data interface{}) ([
 	}
 	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
 
-	var tenant string
-	var token *string
-	if server.Tenant == "" {
-		tenant, token, err = auth.GetDefaultToken()
-		if err != nil {
-			return nil, err
-		}
-	} else {
-		tenant = server.Tenant
-		token, err = auth.GetToken(server)
-		if err != nil {
-			return nil, err
-		}
+	addAuthHeader(server, request)
+
+	client := &http.Client{}
+	response, err := client.Do(request)
+	if err != nil {
+		return nil, err
 	}
-	if token == nil {
-		return nil, fmt.Errorf("was not able to get credentials for tenant %s", tenant)
+	defer response.Body.Close()
+
+	log.Debug("Response Status: ", response.Status)
+	log.Debug("Response Headers: ", response.Header)
+	body, _ := ioutil.ReadAll(response.Body)
+	log.Debug("Response Body: ", string(body))
+
+	if response.StatusCode > 201 {
+		errResponse := struct {
+			Message string `json:"message"`
+		}{
+			Message: "API request failed",
+		}
+
+		err := json.Unmarshal(body, &errResponse)
+		if err != nil {
+			log.Fatalf("failed to parse error response body: %s", body)
+		}
+
+		return body, errors.New(errResponse.Message)
 	}
-	request.Header.Set("Authorization", fmt.Sprintf("Bearer %s", *token))
+
+	return body, nil
+}
+
+func GetData(server auth.ServerConfig, apiPath string, id *string, query map[string]string) ([]byte, error) {
+	url, _ := url.Parse(server.Endpoint)
+
+	url.Path = path.Join(url.Path, "api", apiPath)
+	if id != nil {
+		url.Path = path.Join(url.Path, *id)
+	}
+
+	queryValues := url.Query()
+	for key, value := range query {
+		queryValues.Add(key, value)
+	}
+	url.RawQuery = queryValues.Encode()
+
+	log.Debug("Getting: ", url)
+
+	if url.Scheme != "https" {
+		log.Warnf("[WARNING] connection to \"%s\" is not secure, this could leak your credentials", server.Endpoint)
+	}
+
+	request, err := http.NewRequest("GET", url.String(), nil)
+	if err != nil {
+		return nil, err
+	}
+	request.Header.Set("Content-Type", "application/json; charset=UTF-8")
+
+	addAuthHeader(server, request)
 
 	client := &http.Client{}
 	response, err := client.Do(request)

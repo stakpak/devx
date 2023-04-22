@@ -63,7 +63,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	return nil
 }
 
-func Diff(target string, environment string, configDir string, stackPath string, buildersPath string, strict bool) error {
+func Diff(target string, environment string, configDir string, stackPath string, buildersPath string, server auth.ServerConfig, strict bool) error {
 	log.Infof("📍 Processing target stack @ %s", target)
 	targetDir, err := os.MkdirTemp("", "devx-target-*")
 	if err != nil {
@@ -95,7 +95,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 		return err
 	}
 
-	err = project.Update(targetDir)
+	err = project.Update(targetDir, server)
 	if err != nil {
 		return err
 	}
@@ -209,7 +209,7 @@ func Reserve(buildId string, server auth.ServerConfig, dryRun bool) error {
 	}
 
 	apiPath := path.Join("builds", buildId, "reserve")
-	data, err := utils.SendTelemtry(server, apiPath, reserveData)
+	data, err := utils.SendData(server, apiPath, reserveData)
 	if err != nil {
 		log.Debug(string(data))
 		return err
@@ -231,7 +231,7 @@ func Retire(buildId string, server auth.ServerConfig) error {
 	}
 
 	apiPath := path.Join("builds", buildId, "retire")
-	data, err := utils.SendTelemtry(server, apiPath, map[string]interface{}{})
+	data, err := utils.SendData(server, apiPath, map[string]interface{}{})
 	if err != nil {
 		log.Debug(string(data))
 		return err
