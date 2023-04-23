@@ -90,6 +90,7 @@ func init() {
 		publishPolicyCmd,
 		publishStackCmd,
 		publishCatalogCmd,
+		publishModuleCmd,
 	)
 }
 

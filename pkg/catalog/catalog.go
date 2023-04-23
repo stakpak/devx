@@ -2,12 +2,13 @@ package catalog
 
 import (
 	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"cuelang.org/go/cue"
 
-	"cuelang.org/go/cue/ast"
-	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
 	log "github.com/sirupsen/logrus"
@@ -30,12 +31,97 @@ type Git struct {
 	gitrepo.ProjectGitData
 	gitrepo.GitData
 }
-type PackageItem struct {
-	Module       string   `json:"module"`
-	Dependencies []string `json:"dependencies"`
-	Package      string   `json:"package"`
-	Source       string   `json:"source"`
-	Git          Git      `json:"git"`
+type ModuleItem struct {
+	Module       string                      `json:"module"`
+	Dependencies map[string]ModuleDependency `json:"dependencies"`
+	Package      string                      `json:"package"`
+	Source       map[string]string           `json:"source"`
+	Git          Git                         `json:"git"`
+}
+type ModuleDependency struct {
+	V *string `json:"v,omitempty"`
+}
+
+func PublishModule(gitDir string, configDir string, server auth.ServerConfig) error {
+	if !server.Enable {
+		return fmt.Errorf("-T telemtry should be enabled to publish catalog")
+	}
+
+	projectGitData, err := gitrepo.GetProjectGitData(gitDir)
+	if err != nil {
+		return nil
+	}
+	if projectGitData == nil {
+		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
+	}
+	gitData, err := gitrepo.GetGitData(gitDir)
+	if err != nil {
+		return nil
+	}
+	if gitData == nil {
+		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
+	}
+
+	moduleFilePath := filepath.Join(configDir, "cue.mod", "module.cue")
+	moduleData, err := os.ReadFile(moduleFilePath)
+	if err != nil {
+		return fmt.Errorf("%s not found", moduleFilePath)
+	}
+
+	ctx := cuecontext.New()
+	module := ctx.CompileBytes(moduleData)
+
+	moduleName, err := module.LookupPath(cue.ParsePath("module")).String()
+	if err != nil {
+		return fmt.Errorf("invalid module field: %s", err.Error())
+	}
+
+	deps := map[string]ModuleDependency{}
+	depsValue := module.LookupPath(cue.ParsePath("deps"))
+	if depsValue.Exists() {
+		err = depsValue.Decode(&deps)
+		if err != nil {
+			return err
+		}
+	}
+
+	totalSizeBytes := int64(0)
+	overlay := map[string]string{}
+	err = filepath.Walk(configDir, func(path string, info fs.FileInfo, err error) error {
+		if !info.IsDir() &&
+			!strings.HasPrefix(path, "cue.mod") &&
+			!strings.HasPrefix(path, ".git") &&
+			strings.HasSuffix(path, ".cue") {
+			totalSizeBytes += info.Size()
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return fmt.Errorf("failed to read %s :", path, err)
+			}
+
+			overlay[path] = string(content)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	item := ModuleItem{
+		Module:       moduleName,
+		Package:      moduleName,
+		Dependencies: deps,
+		Source:       overlay,
+		Git: Git{
+			*projectGitData,
+			*gitData,
+		},
+	}
+	err = publishModule(server, &item)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
@@ -71,42 +157,6 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	}
 	if gitData == nil {
 		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
-	}
-
-	node := value.Syntax(cue.All(), cue.InlineImports(true))
-	node = astutil.Apply(node, func(c astutil.Cursor) bool {
-		switch n := c.Node().(type) {
-		case *ast.BottomLit:
-			// remove bottom comments because they break text formatting
-			ast.SetComments(n, []*ast.CommentGroup{})
-		}
-		return true
-	}, nil)
-
-	packageCode, err := format.Node(node, format.Simplify())
-	if err != nil {
-		return fmt.Errorf("failed to serialize package code: %s", err)
-	}
-
-	// make sure the AST is valid
-	_, err = format.Source([]byte(packageCode))
-	if err != nil {
-		return fmt.Errorf("failed to serialize package code: %s", err)
-	}
-
-	packageItem := PackageItem{
-		Module:       module,
-		Package:      pkg,
-		Dependencies: deps,
-		Source:       string(packageCode),
-		Git: Git{
-			*projectGitData,
-			*gitData,
-		},
-	}
-	err = publishPackage(server, &packageItem)
-	if err != nil {
-		return err
 	}
 
 	fieldIter, err := value.Fields(cue.Definitions(true))
@@ -287,17 +337,17 @@ func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) erro
 	return nil
 }
 
-func publishPackage(server auth.ServerConfig, packageItem *PackageItem) error {
-	data, err := utils.SendData(server, "package", packageItem)
+func publishModule(server auth.ServerConfig, item *ModuleItem) error {
+	data, err := utils.SendData(server, "package", item)
 	if err != nil {
 		log.Debug(string(data))
 		return err
 	}
 
-	if len(packageItem.Git.Tags) > 0 {
-		log.Infof("📦 Published package %s@%s successfully", packageItem.Package, packageItem.Git.Tags[0])
+	if len(item.Git.Tags) > 0 {
+		log.Infof("📦 Published module %s@%s successfully", item.Module, item.Git.Tags[0])
 	} else {
-		log.Infof("📦 Published package %s successfully", packageItem.Package)
+		log.Infof("📦 Published module %s successfully", item.Module)
 	}
 
 	return nil

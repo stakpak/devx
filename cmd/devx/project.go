@@ -112,6 +112,17 @@ var publishCatalogCmd = &cobra.Command{
 	},
 }
 
+var publishModuleCmd = &cobra.Command{
+	Use:   "mod",
+	Short: "Publish this module",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := catalog.PublishModule(gitDir, configDir, server); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
 var importCmd = &cobra.Command{
 	Use:   "import [<git repo>@<git revision>]",
 	Short: "Import a dependency",

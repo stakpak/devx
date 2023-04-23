@@ -29,7 +29,10 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/mod/semver"
 )
+
+const stakpakPrefix = "stakpak://"
 
 func Validate(configDir string, stackPath string, buildersPath string, strict bool) error {
 	overlays, err := utils.GetOverlays(configDir)
@@ -215,65 +218,113 @@ func Update(configDir string, server auth.ServerConfig) error {
 		return cuemodule.Err()
 	}
 
-	packagesValue := cuemodule.LookupPath(cue.ParsePath("packages"))
-	if packagesValue.Err() != nil {
-		return packagesValue.Err()
-	}
+	deps := map[string]catalog.ModuleDependency{}
 
-	var packages []string
-	err = packagesValue.Decode(&packages)
-	if err != nil {
-		return err
-	}
+	oldPackages := cuemodule.LookupPath(cue.ParsePath("packages"))
+	if oldPackages.Exists() {
+		packages := []string{}
+		err = oldPackages.Decode(&packages)
+		if err != nil {
+			return err
+		}
 
-	for _, pkg := range packages {
-		if strings.HasPrefix(pkg, "stakpak://") {
-			packageName, packageRevision, err := parseStakpakPackage(pkg)
-			if err != nil {
-				return err
+		for _, pkg := range packages {
+			parts := strings.SplitN(pkg, "@", 2)
+			name := parts[0]
+
+			parts = strings.SplitN(parts[1], ":", 2)
+			version := parts[0]
+			dep := catalog.ModuleDependency{
+				V: nil,
 			}
 
-			log.Infof("📦 Downloading %s@%s", packageName, packageRevision)
+			if semver.IsValid(version) {
+				dep.V = &version
+			}
+			deps[name] = dep
+		}
+
+		moduleName, err := cuemodule.LookupPath(cue.ParsePath("module")).String()
+		if err != nil {
+			return err
+		}
+		if err := updateModuleFile(configDir, ctx, moduleName, deps); err != nil {
+			return err
+		}
+
+		log.Info("Updated module.cue format")
+	}
+
+	depsValue := cuemodule.LookupPath(cue.ParsePath("deps"))
+	if depsValue.Exists() {
+		if depsValue.Err() != nil {
+			return depsValue.Err()
+		}
+
+		err = depsValue.Decode(&deps)
+		if err != nil {
+			return err
+		}
+	}
+
+	for name, pkg := range deps {
+		if strings.HasPrefix(name, stakpakPrefix) {
+			name = strings.TrimPrefix(name, stakpakPrefix)
+			queryParams := map[string]string{
+				"name": name,
+			}
+
+			if pkg.V != nil {
+				queryParams["version"] = *pkg.V
+			}
 
 			data, err := utils.GetData(
 				server,
 				path.Join("package", "fetch"),
 				nil,
-				map[string]string{
-					"name":    packageName,
-					"version": packageRevision,
-				},
+				queryParams,
 			)
 			if err != nil {
 				return err
 			}
-			packageItem := catalog.PackageItem{}
+			packageItem := catalog.ModuleItem{}
 			err = json.Unmarshal(data, &packageItem)
 			if err != nil {
 				return err
 			}
 
-			pkgDir := path.Join(configDir, "cue.mod", "pkg", packageName)
+			installedVersion := "<untagged>"
+			if len(packageItem.Git.Tags) > 0 {
+				installedVersion = packageItem.Git.Tags[0]
+			}
+
+			log.Infof("📦 Installing %s@%s", name, installedVersion)
+
+			pkgDir := path.Join(configDir, "cue.mod", "pkg", name)
 			err = os.RemoveAll(pkgDir)
 			if err != nil {
 				return err
 			}
 
-			if err := os.MkdirAll(pkgDir, 0755); err != nil {
-				return err
+			for path, content := range packageItem.Source {
+				writePath := filepath.Join(pkgDir, path)
+				writeDirPath := filepath.Dir(writePath)
+				if err := os.MkdirAll(writeDirPath, 0755); err != nil {
+					return err
+				}
+				if err != os.WriteFile(writePath, []byte(content), 0700) {
+					return err
+				}
 			}
-
-			if err != os.WriteFile(filepath.Join(pkgDir, "main.cue"), []byte(packageItem.Source), 0700) {
-				return err
-			}
-
 			continue
 		}
 
-		repoURL, repoRevision, repoPath, err := parseGitPackage(pkg)
-		if err != nil {
-			return err
+		repoURL := "https://" + name
+		repoRevision := "main"
+		if pkg.V != nil {
+			repoRevision = *pkg.V
 		}
+		repoPath := ""
 
 		repo, mfs, err := getRepo(repoURL)
 		if err != nil {
@@ -285,7 +336,7 @@ func Update(configDir string, server auth.ServerConfig) error {
 			return err
 		}
 
-		log.Infof("📦 Downloading %s @ %s", pkg, hash)
+		log.Infof("📦 Installing %s@%s", name, hash)
 
 		w, err := repo.Worktree()
 		if err != nil {
@@ -411,37 +462,6 @@ func Update(configDir string, server auth.ServerConfig) error {
 	return nil
 }
 
-func parseGitPackage(pkg string) (string, string, string, error) {
-	parts := strings.SplitN(pkg, "@", 2)
-	if len(parts) < 2 {
-		return "", "", "", fmt.Errorf("no revision specified")
-	}
-	url := "https://" + parts[0]
-	remparts := strings.SplitN(parts[1], ":", 2)
-	if len(remparts) < 2 {
-		remparts = strings.SplitN(parts[1], "/", 2)
-		if len(remparts) < 2 {
-			return "", "", "", fmt.Errorf("no path specified")
-		}
-	}
-	revision := remparts[0]
-	path := remparts[1]
-
-	return url, revision, path, nil
-}
-
-func parseStakpakPackage(pkg string) (string, string, error) {
-	parts := strings.SplitN(strings.TrimPrefix(pkg, "stakpak://"), "@", 2)
-	if len(parts) < 2 {
-		return "", "", fmt.Errorf("no revision specified")
-	}
-
-	pkgName := parts[0]
-	pkgRevision := parts[1]
-
-	return pkgName, pkgRevision, nil
-}
-
 func getRepo(repoURL string) (*git.Repository, *billy.Filesystem, error) {
 	// try without auth
 	mfs := memfs.New()
@@ -493,7 +513,7 @@ GIT_PRIVATE_KEY_FILE & GIT_PRIVATE_KEY_FILE_PASSWORD`)
 	if gitPrivateKeyFile != "" {
 		publicKeys, err := ssh.NewPublicKeysFromFile("git", gitPrivateKeyFile, gitPrivateKeyFilePassword)
 		if err != nil {
-			return nil, nil, fmt.Errorf("Failed to use git private key %s: %s", gitPrivateKeyFile, err)
+			return nil, nil, fmt.Errorf("failed to use git private key %s: %s", gitPrivateKeyFile, err.Error())
 		}
 
 		mfs = memfs.New()
@@ -533,10 +553,13 @@ func Init(ctx context.Context, parentDir, module string) error {
 		}
 
 		contents := fmt.Sprintf(`module: "%s"
-packages: [
-	"github.com/devopzilla/guku-devx-catalog@main:",
-]
-		`, module)
+
+cue: lang: "%s"
+
+deps: {
+	"github.com/devopzilla/guku-devx-catalog": v: %s
+}
+		`, module, "v0.6.0-alpha.1", "null")
 		if err := os.WriteFile(modFile, []byte(contents), 0600); err != nil {
 			return err
 		}
@@ -624,7 +647,7 @@ func Import(newPackage string, configDir string, server auth.ServerConfig) error
 	if len(pkgParts[1]) == 0 {
 		return fmt.Errorf("invalid package format, git revision should not be empty")
 	}
-	gitRepo := strings.TrimPrefix(strings.TrimPrefix(pkgParts[0], "https://"), "http://")
+	gitRepo := pkgParts[0]
 	gitRevision := pkgParts[1]
 
 	cuemodulePath := path.Join(configDir, "cue.mod", "module.cue")
@@ -639,35 +662,32 @@ func Import(newPackage string, configDir string, server auth.ServerConfig) error
 		return cuemodule.Err()
 	}
 
-	packagesValue := cuemodule.LookupPath(cue.ParsePath("packages"))
-	if packagesValue.Err() != nil {
-		return packagesValue.Err()
-	}
-
-	var packages []string
-	err = packagesValue.Decode(&packages)
+	moduleName, err := cuemodule.LookupPath(cue.ParsePath("module")).String()
 	if err != nil {
 		return err
 	}
 
-	for _, p := range packages {
-		if strings.HasPrefix(p, gitRepo) {
-			log.Infof("Package %s already exists", gitRepo)
+	deps := map[string]catalog.ModuleDependency{}
+	depsValue := cuemodule.LookupPath(cue.ParsePath("deps"))
+	if depsValue.Exists() {
+		err = depsValue.Decode(&deps)
+		if err != nil {
+			return err
+		}
+	}
+
+	for name := range deps {
+		if strings.HasPrefix(name, gitRepo) {
+			log.Infof("Module %s already exists", gitRepo)
 			return nil
 		}
 	}
 
-	packages = append(packages, fmt.Sprintf("%s@%s", gitRepo, gitRevision))
-
-	newcuemodule := ctx.CompileString("")
-	newcuemodule = newcuemodule.FillPath(cue.ParsePath("module"), cuemodule.LookupPath(cue.ParsePath("module")))
-	newcuemodule = newcuemodule.FillPath(cue.ParsePath("packages"), packages)
-	bytes, err := format.Node(newcuemodule.Syntax())
-	if err != nil {
-		return err
+	deps[gitRepo] = catalog.ModuleDependency{
+		V: &gitRevision,
 	}
-	err = os.WriteFile(cuemodulePath, bytes, 0600)
-	if err != nil {
+
+	if err := updateModuleFile(configDir, ctx, moduleName, deps); err != nil {
 		return err
 	}
 
@@ -677,5 +697,21 @@ func Import(newPackage string, configDir string, server auth.ServerConfig) error
 		return errors.New("failed to update packages, fix this issue and re-run devx project update")
 	}
 
+	return nil
+}
+
+func updateModuleFile(configDir string, ctx *cue.Context, module string, deps map[string]catalog.ModuleDependency) error {
+	cuemodulePath := path.Join(configDir, "cue.mod", "module.cue")
+	newcuemodule := ctx.CompileString("")
+	newcuemodule = newcuemodule.FillPath(cue.ParsePath("module"), module)
+	newcuemodule = newcuemodule.FillPath(cue.ParsePath("deps"), deps)
+	bytes, err := format.Node(newcuemodule.Syntax(cue.Concrete(true), cue.Final()), format.Simplify())
+	if err != nil {
+		return err
+	}
+	err = os.WriteFile(cuemodulePath, bytes, 0600)
+	if err != nil {
+		return err
+	}
 	return nil
 }
