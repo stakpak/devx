@@ -584,10 +584,6 @@ type ProjectData struct {
 }
 
 func Publish(configDir string, stackPath string, buildersPath string, server auth.ServerConfig) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to publish stack")
-	}
-
 	project := ProjectData{}
 
 	overlays, err := utils.GetOverlays(configDir)

@@ -43,10 +43,6 @@ type ModuleDependency struct {
 }
 
 func PublishModule(gitDir string, configDir string, server auth.ServerConfig) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to publish catalog")
-	}
-
 	projectGitData, err := gitrepo.GetProjectGitData(gitDir)
 	if err != nil {
 		return nil
@@ -125,10 +121,6 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig) er
 }
 
 func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to publish catalog")
-	}
-
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err

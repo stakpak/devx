@@ -28,10 +28,6 @@ type GlobalPolicyData struct {
 }
 
 func Publish(configDir string, server auth.ServerConfig) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to publish policies")
-	}
-
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
