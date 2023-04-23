@@ -267,7 +267,12 @@ func Update(configDir string, server auth.ServerConfig) error {
 		}
 	}
 
-	for name, pkg := range deps {
+	allDeps, err := resolveNestedDependencies(server, deps, 0)
+	if err != nil {
+		return err
+	}
+
+	for name, pkg := range allDeps {
 		if strings.HasPrefix(name, stakpakPrefix) {
 			name = strings.TrimPrefix(name, stakpakPrefix)
 			queryParams := map[string]string{
@@ -712,4 +717,99 @@ func updateModuleFile(configDir string, ctx *cue.Context, module string, deps ma
 		return err
 	}
 	return nil
+}
+
+func resolveNestedDependencies(server auth.ServerConfig, deps map[string]catalog.ModuleDependency, depth uint) (map[string]catalog.ModuleDependency, error) {
+	if depth > 10 {
+		return nil, errors.New("exceeded allowed dependency resolution depth")
+	}
+
+	newDeps := map[string]catalog.ModuleDependency{}
+	for name, pkg := range deps {
+		newDeps[name] = pkg
+	}
+
+	for name, pkg := range deps {
+		if !strings.HasPrefix(name, stakpakPrefix) {
+			continue
+		}
+		name = strings.TrimPrefix(name, stakpakPrefix)
+		queryParams := map[string]string{
+			"name": name,
+		}
+
+		if pkg.V != nil {
+			queryParams["version"] = *pkg.V
+		}
+
+		data, err := utils.GetData(
+			server,
+			path.Join("package", "fetch"),
+			nil,
+			queryParams,
+		)
+		if err != nil {
+			return nil, err
+		}
+		packageItem := catalog.ModuleItem{}
+		err = json.Unmarshal(data, &packageItem)
+		if err != nil {
+			return nil, err
+		}
+
+		nestedDeps, err := resolveNestedDependencies(server, packageItem.Dependencies, depth+1)
+		if err != nil {
+			return nil, err
+		}
+
+		for nestedName, nestedPkg := range nestedDeps {
+			if duplicateNestedPkg, ok := newDeps[nestedName]; ok {
+				// if no collision skip and keep existing one
+				if duplicateNestedPkg.V == nestedPkg.V {
+					continue
+				}
+
+				va, vb := "<untagged>", "<untagged>"
+				if duplicateNestedPkg.V != nil {
+					va = *duplicateNestedPkg.V
+				}
+				if nestedPkg.V != nil {
+					vb = *nestedPkg.V
+				}
+				log.Warnf(
+					"possible dependency collision for %s between %s and %s",
+					nestedName, va, vb,
+				)
+
+				// if existing package has no version, replace it by new dependency version
+				if duplicateNestedPkg.V == nil {
+					newDeps[nestedName] = nestedPkg
+					log.Warnf(
+						"using %s",
+						vb,
+					)
+					continue
+				}
+
+				// if new package has no version, keep the old version
+				if nestedPkg.V == nil {
+					log.Warnf(
+						"using %s",
+						va,
+					)
+					continue
+				}
+
+				return nil, fmt.Errorf(
+					"dependency collision for module %s: between %s@%s and %s@%s",
+					packageItem.Module,
+					nestedName, va,
+					nestedName, vb,
+				)
+			}
+			newDeps[nestedName] = nestedPkg
+		}
+	}
+
+	return newDeps, nil
 }
