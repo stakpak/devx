@@ -552,15 +552,12 @@ func Init(ctx context.Context, parentDir, module string) error {
 			return statErr
 		}
 
-		contents := fmt.Sprintf(`module: "%s"
-
-cue: lang: "%s"
-
-deps: {
-	"github.com/devopzilla/guku-devx-catalog": v: %s
-}
-		`, module, "v0.6.0-alpha.1", "null")
-		if err := os.WriteFile(modFile, []byte(contents), 0600); err != nil {
+		ctx := cuecontext.New()
+		if err := updateModuleFile(parentDir, ctx, module, map[string]catalog.ModuleDependency{
+			"github.com/devopzilla/guku-devx-catalog": {
+				V: nil,
+			},
+		}); err != nil {
 			return err
 		}
 	}
@@ -704,6 +701,7 @@ func updateModuleFile(configDir string, ctx *cue.Context, module string, deps ma
 	cuemodulePath := path.Join(configDir, "cue.mod", "module.cue")
 	newcuemodule := ctx.CompileString("")
 	newcuemodule = newcuemodule.FillPath(cue.ParsePath("module"), module)
+	newcuemodule = newcuemodule.FillPath(cue.ParsePath("cue.lang"), "v0.6.0-alpha.1")
 	newcuemodule = newcuemodule.FillPath(cue.ParsePath("deps"), deps)
 	bytes, err := format.Node(newcuemodule.Syntax(cue.Concrete(true), cue.Final()), format.Simplify())
 	if err != nil {

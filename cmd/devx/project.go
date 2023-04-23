@@ -18,10 +18,16 @@ var projectCmd = &cobra.Command{
 }
 
 var initCmd = &cobra.Command{
-	Use:   "init",
+	Use:   "init [module name]",
 	Short: "Initialize a project",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return errors.New("1 argument required: init [module name]")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Init(context.TODO(), configDir, ""); err != nil {
+		if err := project.Init(context.TODO(), configDir, args[0]); err != nil {
 			return err
 		}
 		return nil
