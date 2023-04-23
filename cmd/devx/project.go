@@ -122,7 +122,7 @@ var publishModuleCmd = &cobra.Command{
 	Use:   "mod",
 	Short: "Publish this module",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := catalog.PublishModule(gitDir, configDir, server); err != nil {
+		if err := catalog.PublishModule(gitDir, configDir, server, tags); err != nil {
 			return err
 		}
 		return nil

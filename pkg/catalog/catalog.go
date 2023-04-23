@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"golang.org/x/mod/semver"
 
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
@@ -36,26 +37,41 @@ type ModuleItem struct {
 	Dependencies map[string]ModuleDependency `json:"dependencies"`
 	Package      string                      `json:"package"`
 	Source       map[string]string           `json:"source"`
-	Git          Git                         `json:"git"`
+	Tags         []string                    `json:"tags"`
 }
 type ModuleDependency struct {
 	V *string `json:"v,omitempty"`
 }
 
-func PublishModule(gitDir string, configDir string, server auth.ServerConfig) error {
-	projectGitData, err := gitrepo.GetProjectGitData(gitDir)
-	if err != nil {
-		return nil
-	}
-	if projectGitData == nil {
-		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
-	}
+func PublishModule(gitDir string, configDir string, server auth.ServerConfig, tags []string) error {
 	gitData, err := gitrepo.GetGitData(gitDir)
 	if err != nil {
 		return nil
 	}
+
+	tagsToPush := []string{}
+
 	if gitData == nil {
-		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
+		for _, gitTag := range gitData.Tags {
+			exists := false
+			for _, tag := range tags {
+				if tag == gitTag {
+					exists = true
+					break
+				}
+			}
+			if exists {
+				continue
+			}
+			tagsToPush = append(tagsToPush, gitTag)
+		}
+	}
+
+	for _, tag := range tags {
+		if !semver.IsValid(tag) {
+			return fmt.Errorf("invalid tag \"%s\" that is not a valid semantic version, please check https://semver.org/", tag)
+		}
+		tagsToPush = append(tagsToPush, tag)
 	}
 
 	moduleFilePath := filepath.Join(configDir, "cue.mod", "module.cue")
@@ -107,10 +123,7 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig) er
 		Package:      moduleName,
 		Dependencies: deps,
 		Source:       overlay,
-		Git: Git{
-			*projectGitData,
-			*gitData,
-		},
+		Tags:         tagsToPush,
 	}
 	err = publishModule(server, &item)
 	if err != nil {
@@ -336,8 +349,8 @@ func publishModule(server auth.ServerConfig, item *ModuleItem) error {
 		return err
 	}
 
-	if len(item.Git.Tags) > 0 {
-		log.Infof("📦 Published module %s@%s successfully", item.Module, item.Git.Tags[0])
+	if len(item.Tags) > 0 {
+		log.Infof("📦 Published module %s@%s successfully", item.Module, item.Tags[0])
 	} else {
 		log.Infof("📦 Published module %s successfully", item.Module)
 	}

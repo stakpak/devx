@@ -22,6 +22,7 @@ var (
 	verbosity        string
 	stdout           bool
 	reserve          bool
+	tags             []string
 )
 var server = auth.ServerConfig{}
 
@@ -64,6 +65,8 @@ func init() {
 	runCmd.PersistentFlags().BoolVar(&runFlags.ExitCode, "exit-code", false, "pass-through the exit code of the task command")
 	runCmd.PersistentFlags().BoolVar(&runFlags.Color, "color", true, "colored output. Enabled by default. Set flag to false to disable")
 	runCmd.PersistentFlags().DurationVar(&runFlags.Interval, "interval", 0, "interval to watch for changes")
+
+	publishModuleCmd.PersistentFlags().StringArrayVarP(&tags, "tag", "t", []string{}, "tags to publish the module with")
 
 	rootCmd.AddCommand(
 		buildCmd,

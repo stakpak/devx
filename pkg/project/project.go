@@ -299,8 +299,8 @@ func Update(configDir string, server auth.ServerConfig) error {
 			}
 
 			installedVersion := "<untagged>"
-			if len(packageItem.Git.Tags) > 0 {
-				installedVersion = packageItem.Git.Tags[0]
+			if len(packageItem.Tags) > 0 {
+				installedVersion = packageItem.Tags[0]
 			}
 
 			log.Infof("📦 Installing %s@%s", name, installedVersion)
