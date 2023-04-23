@@ -95,7 +95,7 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig) er
 			totalSizeBytes += info.Size()
 			content, err := os.ReadFile(path)
 			if err != nil {
-				return fmt.Errorf("failed to read %s :", path, err)
+				return fmt.Errorf("failed to read %s : %s", path, err.Error())
 			}
 
 			overlay[path] = string(content)
