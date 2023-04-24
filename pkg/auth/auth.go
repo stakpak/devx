@@ -17,7 +17,7 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
-const DEVX_CLOUD_ENDPOINT = "https://devxhub.guku.io"
+const DEVX_CLOUD_ENDPOINT = "https://hub.stakpak.dev"
 
 type ServerConfig struct {
 	Enable   bool
