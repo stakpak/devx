@@ -20,13 +20,16 @@ import (
 )
 
 type CatalogItem struct {
-	Module       string                 `json:"module"`
-	Dependencies []string               `json:"dependencies"`
-	Package      string                 `json:"package"`
-	Name         string                 `json:"name"`
-	Source       string                 `json:"source"`
-	Git          Git                    `json:"git"`
-	Metadata     map[string]interface{} `json:"metadata"`
+	Name     string                 `json:"name"`
+	Source   string                 `json:"source"`
+	Metadata map[string]interface{} `json:"metadata"`
+	Package  Package                `json:"package"`
+}
+type Package struct {
+	Module  string   `json:"module"`
+	Package string   `json:"package"`
+	Tags    []string `json:"tags"`
+	Git     Git      `json:"git"`
 }
 type Git struct {
 	gitrepo.ProjectGitData
@@ -43,6 +46,14 @@ type ModuleDependency struct {
 	V *string `json:"v,omitempty"`
 }
 
+type ModuleCUE struct {
+	Module       string                      `json:"module"`
+	Dependencies map[string]ModuleDependency `json:"deps"`
+	Cue          struct {
+		Language string `json:"lang"`
+	} `json:"cue,omitempty"`
+}
+
 func PublishModule(gitDir string, configDir string, server auth.ServerConfig, tags []string) error {
 	gitData, err := gitrepo.GetGitData(gitDir)
 	if err != nil {
@@ -51,7 +62,7 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig, ta
 
 	tagsToPush := []string{}
 
-	if gitData == nil {
+	if gitData != nil {
 		for _, gitTag := range gitData.Tags {
 			exists := false
 			for _, tag := range tags {
@@ -74,6 +85,10 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig, ta
 		tagsToPush = append(tagsToPush, tag)
 	}
 
+	if len(tagsToPush) == 0 {
+		return fmt.Errorf("no tags specified, cannot publish the module without semver tags")
+	}
+
 	moduleFilePath := filepath.Join(configDir, "cue.mod", "module.cue")
 	moduleData, err := os.ReadFile(moduleFilePath)
 	if err != nil {
@@ -82,19 +97,9 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig, ta
 
 	ctx := cuecontext.New()
 	module := ctx.CompileBytes(moduleData)
-
-	moduleName, err := module.LookupPath(cue.ParsePath("module")).String()
-	if err != nil {
-		return fmt.Errorf("invalid module field: %s", err.Error())
-	}
-
-	deps := map[string]ModuleDependency{}
-	depsValue := module.LookupPath(cue.ParsePath("deps"))
-	if depsValue.Exists() {
-		err = depsValue.Decode(&deps)
-		if err != nil {
-			return err
-		}
+	moduleCue := ModuleCUE{}
+	if err := module.Decode(&moduleCue); err != nil {
+		return err
 	}
 
 	totalSizeBytes := int64(0)
@@ -119,9 +124,9 @@ func PublishModule(gitDir string, configDir string, server auth.ServerConfig, ta
 	}
 
 	item := ModuleItem{
-		Module:       moduleName,
-		Package:      moduleName,
-		Dependencies: deps,
+		Module:       moduleCue.Module,
+		Package:      moduleCue.Module,
+		Dependencies: moduleCue.Dependencies,
 		Source:       overlay,
 		Tags:         tagsToPush,
 	}
@@ -142,10 +147,6 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	instances := utils.LoadInstances(configDir, &overlays)
 	instance := instances[0]
 
-	module := instance.Module
-	pkg := instance.ID()
-	deps := instance.Deps
-
 	ctx := cuecontext.New()
 	value := ctx.BuildInstance(instance)
 
@@ -162,6 +163,19 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 	}
 	if gitData == nil {
 		return fmt.Errorf("git is not initialized, cannot publish a catalog without version control")
+	}
+	if len(gitData.Tags) == 0 {
+		return fmt.Errorf("no git tags found, cannot publish to catalog without semver tags")
+	}
+
+	pkgItem := Package{
+		Module:  instance.Module,
+		Package: instance.ID(),
+		Tags:    gitData.Tags,
+		Git: Git{
+			*projectGitData,
+			*gitData,
+		},
 	}
 
 	fieldIter, err := value.Fields(cue.Definitions(true))
@@ -188,19 +202,13 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 				data, _ := format.Node(item.Source())
 				catalogItem := CatalogItem{
-					Module:       module,
-					Package:      pkg,
-					Dependencies: deps,
-					Source:       strings.TrimSpace(string(data)),
-					Name:         fieldIter.Label(),
-					Git: Git{
-						*projectGitData,
-						*gitData,
-					},
+					Source: strings.TrimSpace(string(data)),
+					Name:   fieldIter.Label(),
 					Metadata: map[string]interface{}{
 						"traits": traits,
 						"type":   "Transformer",
 					},
+					Package: pkgItem,
 				}
 				err = publishCatalogItem(server, &catalogItem)
 				if err != nil {
@@ -225,19 +233,13 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
-				Module:       module,
-				Package:      pkg,
-				Dependencies: deps,
-				Source:       strings.TrimSpace(string(data)),
-				Name:         fieldIter.Label(),
-				Git: Git{
-					*projectGitData,
-					*gitData,
-				},
+				Source: strings.TrimSpace(string(data)),
+				Name:   fieldIter.Label(),
 				Metadata: map[string]interface{}{
 					"traits": traits,
 					"type":   catalogItemType,
 				},
+				Package: pkgItem,
 			}
 			err = publishCatalogItem(server, &catalogItem)
 			if err != nil {
@@ -265,19 +267,13 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
-				Module:       module,
-				Package:      pkg,
-				Dependencies: deps,
-				Source:       strings.TrimSpace(string(data)),
-				Name:         fieldIter.Label(),
-				Git: Git{
-					*projectGitData,
-					*gitData,
-				},
+				Source: strings.TrimSpace(string(data)),
+				Name:   fieldIter.Label(),
 				Metadata: map[string]interface{}{
 					"components": componentsMeta,
 					"type":       "Stack",
 				},
+				Package: pkgItem,
 			}
 			err = publishCatalogItem(server, &catalogItem)
 			if err != nil {
@@ -305,19 +301,13 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 
 			data, _ := format.Node(item.Source())
 			catalogItem := CatalogItem{
-				Module:       module,
-				Package:      pkg,
-				Dependencies: deps,
-				Source:       strings.TrimSpace(string(data)),
-				Name:         fieldIter.Label(),
-				Git: Git{
-					*projectGitData,
-					*gitData,
-				},
+				Source: strings.TrimSpace(string(data)),
+				Name:   fieldIter.Label(),
 				Metadata: map[string]interface{}{
 					"traits": traits,
 					"type":   "StackBuilder",
 				},
+				Package: pkgItem,
 			}
 			err = publishCatalogItem(server, &catalogItem)
 			if err != nil {
@@ -337,7 +327,7 @@ func publishCatalogItem(server auth.ServerConfig, catalogItem *CatalogItem) erro
 		return err
 	}
 
-	log.Infof("🚀 Published %s %s successfully", catalogItem.Package, catalogItem.Name)
+	log.Infof("🚀 Published %s %s successfully", catalogItem.Package.Package, catalogItem.Name)
 
 	return nil
 }
