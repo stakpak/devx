@@ -393,7 +393,11 @@ func SendData(server auth.ServerConfig, apiPath string, data interface{}) ([]byt
 			log.Fatalf("failed to parse error response body: %s", body)
 		}
 
-		return body, errors.New(errResponse.Message)
+		if response.StatusCode == 401 {
+			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx login --tenant <your tenant>", errResponse.Message)
+		}
+
+		return nil, errors.New(errResponse.Message)
 	}
 
 	return body, nil
@@ -451,7 +455,11 @@ func GetData(server auth.ServerConfig, apiPath string, id *string, query map[str
 			log.Fatalf("failed to parse error response body: %s", body)
 		}
 
-		return body, errors.New(errResponse.Message)
+		if response.StatusCode == 401 {
+			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx login --tenant <your tenant>", errResponse.Message)
+		}
+
+		return nil, errors.New(errResponse.Message)
 	}
 
 	return body, nil

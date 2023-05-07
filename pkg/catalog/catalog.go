@@ -57,7 +57,7 @@ type ModuleCUE struct {
 func PublishModule(gitDir string, configDir string, server auth.ServerConfig, tags []string) error {
 	gitData, err := gitrepo.GetGitData(gitDir)
 	if err != nil {
-		return nil
+		return err
 	}
 
 	tagsToPush := []string{}

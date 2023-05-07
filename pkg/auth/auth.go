@@ -70,13 +70,50 @@ func GetDefaultToken() (string, *string, error) {
 	return tenant, cfg.Token, nil
 }
 
+func Clear(server ServerConfig) error {
+	return deleteConfig()
+}
+
+func Info(server ServerConfig) error {
+	var cfg Config
+
+	if server.Tenant == "" {
+		tenant, _, err := loadDefaultConfig()
+		if err != nil {
+			return err
+		}
+		server.Tenant = tenant
+	}
+
+	cfgFile, err := loadConfig()
+	if err != nil {
+		return err
+	}
+
+	if _, ok := cfgFile[server.Tenant]; ok {
+		cfg = cfgFile[server.Tenant]
+	}
+
+	log.Infof(`Auth info:
+	Tenant: %s
+	Server endpoint: %s
+	Token valid until: %s
+	`,
+		server.Tenant,
+		*cfg.Endpoint,
+		cfg.TokenExpiresOn,
+	)
+
+	return nil
+}
+
 func Login(server ServerConfig) error {
 	if server.Endpoint == "" {
 		server.Endpoint = DEVX_CLOUD_ENDPOINT
 	}
 
 	if server.Tenant == "" {
-		return fmt.Errorf("--tenant is required")
+		return fmt.Errorf("--tenant <tenant name> is required")
 	}
 
 	cfgFile, err := loadConfig()
@@ -212,7 +249,7 @@ func loadDefaultConfig() (string, Config, error) {
 			return tenant, cfg, nil
 		}
 	}
-	return "", Config{}, fmt.Errorf("no configs found. login and try again")
+	return "", Config{}, fmt.Errorf("no credentials found\nTry logging in using\n\ndevx login --tenant <your tenant>")
 }
 
 func loadConfig() (ConfigFile, error) {
@@ -260,4 +297,26 @@ func saveConfig(cfg ConfigFile) error {
 	}
 
 	return os.WriteFile(configPath, configData, 0700)
+}
+
+func deleteConfig() error {
+	configDir, err := getConfigDir()
+	if err != nil {
+		return err
+	}
+
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		err = os.MkdirAll(configDir, 0700)
+		if err != nil {
+			return err
+		}
+	}
+
+	configPath := filepath.Join(configDir, "config")
+
+	if err := os.Remove(configPath); err != nil {
+		return err
+	}
+
+	return nil
 }

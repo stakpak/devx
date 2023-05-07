@@ -15,3 +15,25 @@ var loginCmd = &cobra.Command{
 		return nil
 	},
 }
+
+var clearCmd = &cobra.Command{
+	Use:   "clear",
+	Short: "Clear cached credentials",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := auth.Clear(server); err != nil {
+			return err
+		}
+		return nil
+	},
+}
+
+var infoCmd = &cobra.Command{
+	Use:   "info",
+	Short: "Display session information",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := auth.Info(server); err != nil {
+			return err
+		}
+		return nil
+	},
+}

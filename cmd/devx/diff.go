@@ -13,7 +13,7 @@ var diffCmd = &cobra.Command{
 	Short: "Diff the current stack with that @ target (e.g. HEAD, commit, tag).",
 	Args:  cobra.ExactArgs(2),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := client.Diff(args[0], args[1], configDir, stackPath, buildersPath, server, strict); err != nil {
+		if err := client.Diff(args[0], args[1], configDir, stackPath, buildersPath, server, noStrict); err != nil {
 			return fmt.Errorf(errors.Details(err, nil))
 		}
 		return nil

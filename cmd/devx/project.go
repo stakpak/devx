@@ -50,7 +50,7 @@ var validateCmd = &cobra.Command{
 	Aliases: []string{"v"},
 	Short:   "Validate configurations",
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if err := project.Validate(configDir, stackPath, buildersPath, strict); err != nil {
+		if err := project.Validate(configDir, stackPath, buildersPath, noStrict); err != nil {
 			return fmt.Errorf(errors.Details(err, nil))
 		}
 		return nil

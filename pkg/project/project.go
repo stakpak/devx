@@ -34,14 +34,14 @@ import (
 
 const stakpakPrefix = "stakpak://"
 
-func Validate(configDir string, stackPath string, buildersPath string, strict bool) error {
+func Validate(configDir string, stackPath string, buildersPath string, noStrict bool) error {
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
 	}
 
 	value, _, _ := utils.LoadProject(configDir, &overlays)
-	if err := ValidateProject(value, stackPath, buildersPath, strict); err != nil {
+	if err := ValidateProject(value, stackPath, buildersPath, noStrict); err != nil {
 		return err
 	}
 
@@ -49,7 +49,7 @@ func Validate(configDir string, stackPath string, buildersPath string, strict bo
 	return nil
 }
 
-func ValidateProject(value cue.Value, stackPath string, buildersPath string, strict bool) error {
+func ValidateProject(value cue.Value, stackPath string, buildersPath string, noStrict bool) error {
 	err := value.Validate()
 	if err != nil {
 		return err
@@ -77,24 +77,21 @@ func ValidateProject(value cue.Value, stackPath string, buildersPath string, str
 		return err
 	}
 
-	if strict {
-		builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
-		if err != nil {
-			return err
-		}
-
-		stack, err := stack.NewStack(stackValue, "", []string{})
-		if err != nil {
-			return err
-		}
-
-		err = stackbuilder.CheckTraitFulfillment(builders, stack)
-		if err != nil {
-			return err
-		}
+	if noStrict {
+		return nil
 	}
 
-	return nil
+	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
+	if err != nil {
+		return err
+	}
+
+	stack, err := stack.NewStack(stackValue, "", []string{})
+	if err != nil {
+		return err
+	}
+
+	return stackbuilder.CheckTraitFulfillment(builders, stack)
 }
 
 func Discover(configDir string, showDefs bool, showTransformers bool) error {

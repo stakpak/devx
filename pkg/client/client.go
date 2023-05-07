@@ -21,12 +21,12 @@ import (
 	"github.com/devopzilla/guku-devx/pkg/utils"
 )
 
-func Run(environment string, configDir string, stackPath string, buildersPath string, reserve bool, dryRun bool, server auth.ServerConfig, strict bool, stdout bool) error {
+func Run(environment string, configDir string, stackPath string, buildersPath string, reserve bool, dryRun bool, server auth.ServerConfig, noStrict bool, stdout bool) error {
 	ctx := context.Background()
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
 
-	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath, strict)
+	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath, noStrict)
 	if err != nil {
 		return err
 	}
@@ -63,7 +63,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	return nil
 }
 
-func Diff(target string, environment string, configDir string, stackPath string, buildersPath string, server auth.ServerConfig, strict bool) error {
+func Diff(target string, environment string, configDir string, stackPath string, buildersPath string, server auth.ServerConfig, noStrict bool) error {
 	log.Infof("📍 Processing target stack @ %s", target)
 	targetDir, err := os.MkdirTemp("", "devx-target-*")
 	if err != nil {
@@ -103,7 +103,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	targetCtx := context.Background()
 	targetCtx = context.WithValue(targetCtx, utils.ConfigDirKey, targetDir)
 	targetCtx = context.WithValue(targetCtx, utils.DryRunKey, true)
-	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath, strict)
+	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath, noStrict)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	currentCtx := context.Background()
 	currentCtx = context.WithValue(currentCtx, utils.ConfigDirKey, configDir)
 	currentCtx = context.WithValue(currentCtx, utils.DryRunKey, true)
-	currentStack, _, err := buildStack(currentCtx, environment, configDir, stackPath, buildersPath, strict)
+	currentStack, _, err := buildStack(currentCtx, environment, configDir, stackPath, buildersPath, noStrict)
 	if err != nil {
 		return err
 	}
@@ -160,7 +160,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	return nil
 }
 
-func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string, strict bool) (*stack.Stack, *stackbuilder.StackBuilder, error) {
+func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string, noStrict bool) (*stack.Stack, *stackbuilder.StackBuilder, error) {
 	log.Infof("🏗️  Loading stack...")
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
@@ -169,7 +169,7 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
 
 	log.Info("👀 Validating stack...")
-	err = project.ValidateProject(value, stackPath, buildersPath, strict)
+	err = project.ValidateProject(value, stackPath, buildersPath, noStrict)
 	if err != nil {
 		return nil, nil, err
 	}

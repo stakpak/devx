@@ -3,9 +3,12 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
+	"strings"
 
 	"github.com/devopzilla/guku-devx/pkg/auth"
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
 
@@ -18,7 +21,7 @@ var (
 	showTransformers bool
 	dryRun           bool
 	noColor          bool
-	strict           bool
+	noStrict         bool
 	verbosity        string
 	stdout           bool
 	reserve          bool
@@ -44,7 +47,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&stackPath, "stack", "s", "stack", "stack field name in config file")
 	rootCmd.PersistentFlags().StringVarP(&buildersPath, "builders", "b", "builders", "builders field name in config file")
 	rootCmd.PersistentFlags().BoolVar(&noColor, "no-color", false, "disable colors")
-	rootCmd.PersistentFlags().BoolVarP(&strict, "strict", "S", false, "make sure all traits are fulfilled by at least one flow")
+	rootCmd.PersistentFlags().BoolVarP(&noStrict, "no-strict", "S", false, "ignore traits not fulfilled by a builder")
 	buildCmd.PersistentFlags().BoolVarP(&reserve, "reserve", "r", false, "reserve build resources")
 	buildCmd.PersistentFlags().BoolVarP(&dryRun, "dry-run", "d", false, "output the entire stack after transformation without applying drivers")
 	buildCmd.PersistentFlags().BoolVarP(&stdout, "stdout", "o", false, "output result to stdout")
@@ -95,13 +98,18 @@ func init() {
 		publishCatalogCmd,
 		publishModuleCmd,
 	)
+
+	loginCmd.AddCommand(
+		clearCmd,
+		infoCmd,
+	)
 }
 
 var rootCmd = &cobra.Command{
 	Use:              "devx",
 	Short:            "guku DevX cloud native self-service magic",
 	SilenceUsage:     true,
-	PersistentPreRun: setupLogging,
+	PersistentPreRun: preRun,
 }
 
 var versionCmd = &cobra.Command{
@@ -118,6 +126,27 @@ var versionCmd = &cobra.Command{
 		fmt.Println(string(encoded))
 		return nil
 	},
+}
+
+func preRun(cmd *cobra.Command, args []string) {
+	setupLogging(cmd, args)
+
+	resp, err := http.Get("https://api.github.com/repos/devopzilla/guku-devx/releases?per_page=1")
+	if err == nil {
+		releases := []struct {
+			TagName string `json:"tag_name"`
+		}{}
+
+		json.NewDecoder(resp.Body).Decode(&releases)
+
+		if len(releases) > 0 {
+			latestVersion := strings.TrimPrefix(releases[0].TagName, "v")
+			if latestVersion != version && version != "DEV" {
+				log.Infof("A newer version of DevX \"v%s\" is available, please upgrade!\n", latestVersion)
+			}
+		}
+
+	}
 }
 
 func main() {
