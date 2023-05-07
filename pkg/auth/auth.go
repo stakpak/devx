@@ -43,6 +43,39 @@ type TokenResponse struct {
 	TokenType   string `json:"token_type"`
 }
 
+func IsLoggedIn(server ServerConfig) bool {
+	var cfg Config
+
+	if server.Enable {
+		return true
+	}
+
+	if server.Tenant == "" {
+		tenant, _, err := loadDefaultConfig()
+		if err != nil {
+			return false
+		}
+		server.Tenant = tenant
+	}
+
+	cfgFile, err := loadConfig()
+	if err != nil {
+		return false
+	}
+
+	if _, ok := cfgFile[server.Tenant]; ok {
+		cfg = cfgFile[server.Tenant]
+	}
+
+	if cfg.TokenExpiresOn != nil && cfg.TokenExpiresOn.After(time.Now()) {
+		return true
+	}
+
+	log.Info("Found Hub configurations but without a valid token, proceeding offline\nTry again after logging in using: devx login --tenant <your tenant>")
+
+	return false
+}
+
 func GetToken(server ServerConfig) (*string, error) {
 	cfg, err := loadConfig()
 	if err != nil {
@@ -249,7 +282,7 @@ func loadDefaultConfig() (string, Config, error) {
 			return tenant, cfg, nil
 		}
 	}
-	return "", Config{}, fmt.Errorf("no credentials found\nTry logging in using\n\ndevx login --tenant <your tenant>")
+	return "", Config{}, fmt.Errorf("no credentials found\nTry logging in using: devx login --tenant <your tenant>")
 }
 
 func loadConfig() (ConfigFile, error) {

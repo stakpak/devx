@@ -31,7 +31,20 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 		return err
 	}
 
-	if server.Enable {
+	if dryRun {
+		log.Info(stack.GetComponents())
+		return nil
+	}
+
+	for id, driver := range drivers.NewDriversMap(environment, builder.DriverConfig) {
+		if err := driver.ApplyAll(stack, stdout); err != nil {
+			return fmt.Errorf("error running %s driver: %s", id, err)
+		}
+	}
+
+	// remove server.Enable to allow sending telemetry by default
+	if auth.IsLoggedIn(server) && server.Enable {
+		log.Info("📤 Analyzing & uploading build data...")
 		buildId, err := stack.SendBuild(configDir, server, environment)
 		if err != nil {
 			return err
@@ -45,18 +58,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 			}
 		} else {
 			log.Info("To reserve build resources run:")
-			log.Infof("devx reserve %s -T -e %s\n", buildId, server.Endpoint)
-		}
-	}
-
-	if dryRun {
-		log.Info(stack.GetComponents())
-		return nil
-	}
-
-	for id, driver := range drivers.NewDriversMap(environment, builder.DriverConfig) {
-		if err := driver.ApplyAll(stack, stdout); err != nil {
-			return fmt.Errorf("error running %s driver: %s", id, err)
+			log.Infof("devx reserve %s\n", buildId)
 		}
 	}
 
@@ -105,7 +107,25 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	targetCtx = context.WithValue(targetCtx, utils.DryRunKey, true)
 	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath, noStrict)
 	if err != nil {
-		return err
+		return err	if auth.IsLoggedIn(server) {
+			log.Info("📤 Analyzing & uploading build data...")
+			buildId, err := stack.SendBuild(configDir, server, environment)
+			if err != nil {
+				return err
+			}
+			log.Infof("\nCreated build at %s/builds/%s", server.Endpoint, buildId)
+	
+			if reserve {
+				err := Reserve(buildId, server, dryRun)
+				if err != nil {
+					return err
+				}
+			} else {
+				log.Info("To reserve build resources run:")
+				log.Infof("devx reserve %s\n", buildId)
+			}
+		}
+	
 	}
 
 	log.Info("\n📍 Processing current stack")
@@ -198,8 +218,8 @@ func buildStack(ctx context.Context, environment string, configDir string, stack
 }
 
 func Reserve(buildId string, server auth.ServerConfig, dryRun bool) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to reserve resources")
+	if !auth.IsLoggedIn(server) {
+		return fmt.Errorf("must be logged in to be able to reserve resources")
 	}
 
 	reserveData := struct {
@@ -226,8 +246,8 @@ func Reserve(buildId string, server auth.ServerConfig, dryRun bool) error {
 }
 
 func Retire(buildId string, server auth.ServerConfig) error {
-	if !server.Enable {
-		return fmt.Errorf("-T telemtry should be enabled to retire resources")
+	if !auth.IsLoggedIn(server) {
+		return fmt.Errorf("must be logged in to be able to retire resources")
 	}
 
 	apiPath := path.Join("builds", buildId, "retire")
