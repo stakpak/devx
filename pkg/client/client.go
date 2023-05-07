@@ -107,25 +107,7 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	targetCtx = context.WithValue(targetCtx, utils.DryRunKey, true)
 	targetStack, _, err := buildStack(targetCtx, environment, targetDir, stackPath, buildersPath, noStrict)
 	if err != nil {
-		return err	if auth.IsLoggedIn(server) {
-			log.Info("📤 Analyzing & uploading build data...")
-			buildId, err := stack.SendBuild(configDir, server, environment)
-			if err != nil {
-				return err
-			}
-			log.Infof("\nCreated build at %s/builds/%s", server.Endpoint, buildId)
-	
-			if reserve {
-				err := Reserve(buildId, server, dryRun)
-				if err != nil {
-					return err
-				}
-			} else {
-				log.Info("To reserve build resources run:")
-				log.Infof("devx reserve %s\n", buildId)
-			}
-		}
-	
+		return err
 	}
 
 	log.Info("\n📍 Processing current stack")
