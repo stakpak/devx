@@ -7,6 +7,8 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/ast"
+	"cuelang.org/go/cue/ast/astutil"
 	cueflow "cuelang.org/go/tools/flow"
 	"github.com/devopzilla/guku-devx/pkg/auth"
 	"github.com/devopzilla/guku-devx/pkg/gitrepo"
@@ -258,61 +260,99 @@ func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environmen
 }
 
 func (s *Stack) GetReferences() map[string][]Reference {
-	componentIter, _ := s.components.Fields()
-
 	refMap := map[string][]Reference{}
-	for componentIter.Next() {
-		refs := removeDuplicates(GetRef(componentIter.Value()))
-		if len(refs) > 0 {
-			refMap[componentIter.Label()] = refs
+
+	refs := removeDuplicates(GetRef(s.components.Syntax()))
+	for _, r := range refs {
+		if r.Target == "" {
+			continue
 		}
+		parts := strings.SplitN(r.Target, ".", 2)
+		refMap[parts[0]] = append(refMap[parts[0]], r)
 	}
 
 	return refMap
 }
 
-func GetRef(v cue.Value) []Reference {
+func GetRef(node ast.Node) []Reference {
 	refs := []Reference{}
-
-	v.Walk(func(val cue.Value) bool {
-		if strings.HasSuffix(val.Path().String(), "$resources") {
+	astutil.Apply(node, func(c astutil.Cursor) bool {
+		path := GetPath(c)
+		if strings.Contains(path, "#") || strings.Contains(path, "$") {
 			return false
 		}
-		op, vals := val.Expr()
-		switch op {
-		case cue.AndOp, cue.InterpolationOp:
-			for _, value := range vals {
-				refs = append(refs, GetRef(value)...)
+
+		switch n := c.Node().(type) {
+		case *ast.SelectorExpr:
+			sourcePath := GetName(n)
+			if strings.Contains(sourcePath, "#") || strings.Contains(sourcePath, "?") {
+				return false
 			}
-			// return false
-		case cue.SelectorOp:
-			_, structPath := vals[0].ReferencePath()
-			if len(structPath.Selectors()) > 1 {
-				refs = append(refs, Reference{
-					Source: fmt.Sprintf("%s.%s", getPathSuffix(structPath), vals[1]),
-					Target: getPathSuffix(val.Path()),
-				})
+			refs = append(refs, Reference{
+				Source: sourcePath,
+				Target: path,
+			})
+			return false
+		case *ast.IndexExpr:
+			sourcePath := GetName(n)
+			if strings.Contains(sourcePath, "#") || strings.Contains(sourcePath, "?") {
+				return false
 			}
-			// return false
-		case cue.IndexOp:
-			_, structPath := vals[0].ReferencePath()
-			if len(structPath.Selectors()) > 1 {
-				refs = append(refs, Reference{
-					Source: fmt.Sprintf("%s[%s]", getPathSuffix(structPath), vals[1]),
-					Target: getPathSuffix(val.Path()),
-				})
-			}
-			// return false
+			refs = append(refs, Reference{
+				Source: sourcePath,
+				Target: path,
+			})
+			return false
 		}
+
 		return true
 	}, nil)
 
 	return refs
 }
 
-func getPathSuffix(p cue.Path) string {
-	sel := p.Selectors()
-	return cue.MakePath(sel[2:]...).String()
+func GetPath(c astutil.Cursor) string {
+	if c == nil {
+		return ""
+	}
+
+	path := GetPath(c.Parent())
+	if c.Parent() != nil {
+		switch p := c.Parent().Node().(type) {
+		case *ast.ListLit:
+			for i, e := range p.Elts {
+				if e == c.Node() {
+					path = path + fmt.Sprintf("[%d]", i)
+					break
+				}
+			}
+		}
+	}
+
+	switch n := c.Node().(type) {
+	case *ast.Field:
+		path = path + "." + GetName(n.Label)
+	case *ast.Ident:
+		path = path + "." + GetName(n)
+	}
+	return strings.TrimPrefix(path, ".")
+}
+
+func GetName(n ast.Node) string {
+	switch n := n.(type) {
+	case *ast.Ident:
+		return n.Name
+	case *ast.Field:
+		return GetName(n.Label)
+	case *ast.SelectorExpr:
+		return fmt.Sprintf("%s.%s", GetName(n.X), GetName(n.Sel))
+	case *ast.IndexExpr:
+		return fmt.Sprintf("%s[%s]", GetName(n.X), GetName(n.Index))
+	case *ast.BasicLit:
+		return n.Value
+	}
+
+	return "?"
 }
 
 func removeDuplicates(refs []Reference) []Reference {
