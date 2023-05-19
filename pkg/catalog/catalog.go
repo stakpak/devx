@@ -227,7 +227,7 @@ func Publish(gitDir string, configDir string, server auth.ServerConfig) error {
 			}
 
 			catalogItemType := "Trait"
-			if len(traits) > 1 {
+			if len(traits) > 1 || strings.TrimPrefix(fieldIter.Label(), "#") != traits[0] {
 				catalogItemType = "Component"
 			}
 
