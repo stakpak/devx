@@ -39,7 +39,7 @@ type Version struct {
 
 func init() {
 	rootCmd.PersistentFlags().StringVarP(&verbosity, "verbosity", "v", "info", "log verbosity *info | debug | error")
-	rootCmd.PersistentFlags().BoolVarP(&server.Enable, "telemetry", "T", false, "enable sending telemetry to server")
+	rootCmd.PersistentFlags().BoolVarP(&server.Disable, "offline", "D", false, "disable sending telemetry to the Hub")
 	rootCmd.PersistentFlags().StringVarP(&server.Endpoint, "server", "e", auth.DEVX_CLOUD_ENDPOINT, "server endpoint")
 	rootCmd.PersistentFlags().StringVarP(&server.Tenant, "tenant", "n", "", "server tenant")
 	rootCmd.PersistentFlags().StringVarP(&configDir, "project", "p", ".", "project config dir")

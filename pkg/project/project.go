@@ -300,7 +300,7 @@ func Update(configDir string, server auth.ServerConfig) error {
 				installedVersion = packageItem.Tags[0]
 			}
 
-			log.Infof("📦 Installing %s@%s", name, installedVersion)
+			log.Infof("📦 Updating %s@%s", name, installedVersion)
 
 			pkgDir := path.Join(configDir, "cue.mod", "pkg", name)
 			err = os.RemoveAll(pkgDir)
@@ -338,7 +338,7 @@ func Update(configDir string, server auth.ServerConfig) error {
 			return err
 		}
 
-		log.Infof("📦 Installing %s@%s", name, hash)
+		log.Infof("📦 Updating %s@%s", name, hash)
 
 		w, err := repo.Worktree()
 		if err != nil {

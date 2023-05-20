@@ -6,8 +6,9 @@ import (
 )
 
 var loginCmd = &cobra.Command{
-	Use:   "login",
-	Short: "Login to DevX Server",
+	Use:     "auth",
+	Short:   "Authenticate to DevX Server",
+	Aliases: []string{"login"},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if err := auth.Login(server); err != nil {
 			return err

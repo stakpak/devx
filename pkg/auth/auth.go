@@ -20,7 +20,7 @@ import (
 const DEVX_CLOUD_ENDPOINT = "https://hub.stakpak.dev"
 
 type ServerConfig struct {
-	Enable   bool
+	Disable  bool
 	Tenant   string
 	Endpoint string
 }
@@ -46,8 +46,8 @@ type TokenResponse struct {
 func IsLoggedIn(server ServerConfig) bool {
 	var cfg Config
 
-	if server.Enable {
-		return true
+	if server.Disable {
+		return false
 	}
 
 	if server.Tenant == "" {

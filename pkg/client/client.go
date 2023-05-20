@@ -26,6 +26,10 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 	ctx = context.WithValue(ctx, utils.ConfigDirKey, configDir)
 	ctx = context.WithValue(ctx, utils.DryRunKey, dryRun)
 
+	if err := project.Update(configDir, server); err != nil {
+		return err
+	}
+
 	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath, noStrict)
 	if err != nil {
 		return err
@@ -42,8 +46,7 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 		}
 	}
 
-	// remove server.Enable to allow sending telemetry by default
-	if auth.IsLoggedIn(server) && server.Enable {
+	if auth.IsLoggedIn(server) {
 		log.Info("📤 Analyzing & uploading build data...")
 		buildId, err := stack.SendBuild(configDir, server, environment)
 		if err != nil {
