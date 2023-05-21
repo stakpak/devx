@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	"cuelang.org/go/cue"
+	"cuelang.org/go/cue/errors"
+	"cuelang.org/go/cue/format"
 	"github.com/fatih/color"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -32,6 +34,14 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 
 	stack, builder, err := buildStack(ctx, environment, configDir, stackPath, buildersPath, noStrict)
 	if err != nil {
+		if auth.IsLoggedIn(server) {
+			details := errors.Details(err, nil)
+			if buildId, err := stack.SendBuild(configDir, server, environment, &details); err != nil {
+				log.Error("failed to save build data: ", err.Error())
+			} else {
+				log.Infof("\nSaved failed build at %s/builds/%s\n", server.Endpoint, buildId)
+			}
+		}
 		return err
 	}
 
@@ -42,13 +52,22 @@ func Run(environment string, configDir string, stackPath string, buildersPath st
 
 	for id, driver := range drivers.NewDriversMap(environment, builder.DriverConfig) {
 		if err := driver.ApplyAll(stack, stdout); err != nil {
-			return fmt.Errorf("error running %s driver: %s", id, err)
+			newErr := fmt.Errorf("error running %s driver: %s", id, errors.Details(err, nil))
+			if auth.IsLoggedIn(server) {
+				details := newErr.Error()
+				if buildId, err := stack.SendBuild(configDir, server, environment, &details); err != nil {
+					log.Error("failed to save build data: ", err.Error())
+				} else {
+					log.Infof("\nSaved failed build at %s/builds/%s", server.Endpoint, buildId)
+				}
+			}
+			return newErr
 		}
 	}
 
 	if auth.IsLoggedIn(server) {
 		log.Info("📤 Analyzing & uploading build data...")
-		buildId, err := stack.SendBuild(configDir, server, environment)
+		buildId, err := stack.SendBuild(configDir, server, environment, nil)
 		if err != nil {
 			return err
 		}
@@ -167,36 +186,50 @@ func Diff(target string, environment string, configDir string, stackPath string,
 
 func buildStack(ctx context.Context, environment string, configDir string, stackPath string, buildersPath string, noStrict bool) (*stack.Stack, *stackbuilder.StackBuilder, error) {
 	log.Infof("🏗️  Loading stack...")
+
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return nil, nil, err
 	}
 	value, stackId, depIds := utils.LoadProject(configDir, &overlays)
 
+	buildSource, err := format.Node(value.Syntax(), format.Simplify())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	emptyStack := stack.Stack{
+		ID:          stackId,
+		DepIDs:      depIds,
+		BuildSource: string(buildSource),
+	}
+	emptyStack.AddComponents(value.Context().CompileString("{}"))
+
 	log.Info("👀 Validating stack...")
 	err = project.ValidateProject(value, stackPath, buildersPath, noStrict)
 	if err != nil {
-		return nil, nil, err
+		return &emptyStack, nil, err
 	}
 
 	builders, err := stackbuilder.NewEnvironments(value.LookupPath(cue.ParsePath(buildersPath)))
 	if err != nil {
-		return nil, nil, err
+		return &emptyStack, nil, err
 	}
 
 	builder, ok := builders[environment]
 	if !ok {
-		return nil, nil, fmt.Errorf("environment %s was not found", environment)
+		return &emptyStack, nil, fmt.Errorf("environment %s was not found", environment)
 	}
 
 	stack, err := stack.NewStack(value.LookupPath(cue.ParsePath(stackPath)), stackId, depIds)
 	if err != nil {
-		return nil, nil, err
+		return &emptyStack, nil, err
 	}
+	stack.BuildSource = emptyStack.BuildSource
 
 	err = builder.TransformStack(ctx, stack)
 	if err != nil {
-		return nil, nil, err
+		return stack, nil, err
 	}
 
 	return stack, builder, nil

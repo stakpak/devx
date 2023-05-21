@@ -19,6 +19,7 @@ import (
 type Stack struct {
 	ID           string
 	DepIDs       []string
+	BuildSource  string
 	components   cue.Value
 	tasks        []string
 	dependencies map[string][]string
@@ -222,13 +223,15 @@ type BuildData struct {
 	References  map[string][]Reference `json:"references"`
 	Environment string                 `json:"environment"`
 	Git         *gitrepo.GitData       `json:"git,omitempty"`
+	Error       *string                `json:"error"`
+	Source      string                 `json:"source"`
 }
 type Reference struct {
 	Source string `json:"source"`
 	Target string `json:"target"`
 }
 
-func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environment string) (string, error) {
+func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environment string, buildError *string) (string, error) {
 	build := BuildData{
 		Stack:       s.ID,
 		Identity:    "",
@@ -237,6 +240,8 @@ func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environmen
 		References:  s.GetReferences(),
 		Environment: environment,
 		Git:         nil,
+		Error:       buildError,
+		Source:      s.BuildSource,
 	}
 
 	gitData, err := gitrepo.GetGitData(configDir)
@@ -276,6 +281,11 @@ func (s *Stack) GetReferences() map[string][]Reference {
 
 func GetRef(node ast.Node) []Reference {
 	refs := []Reference{}
+
+	if node == nil {
+		return refs
+	}
+
 	astutil.Apply(node, func(c astutil.Cursor) bool {
 		path := GetPath(c)
 		if strings.Contains(path, "#") || strings.Contains(path, "$") {
