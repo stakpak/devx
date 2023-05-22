@@ -1,8 +1,11 @@
 package taskfile
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 	"time"
@@ -10,11 +13,14 @@ import (
 	"cuelang.org/go/cue"
 	cueyaml "cuelang.org/go/encoding/yaml"
 
+	"github.com/devopzilla/guku-devx/pkg/auth"
+	"github.com/devopzilla/guku-devx/pkg/gitrepo"
 	"github.com/devopzilla/guku-devx/pkg/stackbuilder"
 	"github.com/devopzilla/guku-devx/pkg/utils"
 
 	"mvdan.cc/sh/v3/syntax"
 
+	"github.com/acarl005/stripansi"
 	"github.com/go-task/task/v3"
 	taskargs "github.com/go-task/task/v3/args"
 
@@ -39,12 +45,12 @@ type RunFlags struct {
 	Interval time.Duration
 }
 
-func Run(configDir string, buildersPath string, runFlags RunFlags, environment string, doubleDashPos int, args []string) error {
+func Run(configDir string, buildersPath string, server auth.ServerConfig, runFlags RunFlags, environment string, doubleDashPos int, args []string) error {
 	overlays, err := utils.GetOverlays(configDir)
 	if err != nil {
 		return err
 	}
-	value, _, _ := utils.LoadProject(configDir, &overlays)
+	value, stackId, _ := utils.LoadProject(configDir, &overlays)
 	err = value.Validate()
 	if err != nil {
 		return err
@@ -95,6 +101,11 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 		return err
 	}
 
+	outBuff := new(bytes.Buffer)
+	errBuff := new(bytes.Buffer)
+	outWriter := io.MultiWriter(os.Stdout, outBuff)
+	errWriter := io.MultiWriter(os.Stderr, errBuff)
+
 	e := task.Executor{
 		Force:       runFlags.Force,
 		Watch:       runFlags.Watch,
@@ -110,8 +121,8 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 		Interval:    runFlags.Interval,
 
 		Stdin:  os.Stdin,
-		Stdout: os.Stdout,
-		Stderr: os.Stderr,
+		Stdout: outWriter,
+		Stderr: errWriter,
 
 		OutputStyle: taskfile.Output{
 			Name: "",
@@ -171,10 +182,93 @@ func Run(configDir string, buildersPath string, runFlags RunFlags, environment s
 	e.Taskfile.Vars.Merge(globals)
 	e.InterceptInterruptSignals()
 
+	taskMap := map[string]map[string]string{}
+	for _, call := range calls {
+		args := map[string]string{}
+		if call.Vars != nil {
+			for k, v := range call.Vars.Mapping {
+				args[k] = v.Static
+				if v.Sh != "" {
+					args[k] = v.Sh
+				}
+			}
+		}
+		taskMap[call.Task] = args
+	}
+	globalsMap := map[string]string{}
+	if globals != nil {
+		for k, v := range globals.Mapping {
+			globalsMap[k] = v.Static
+			if v.Sh != "" {
+				globalsMap[k] = v.Sh
+			}
+		}
+	}
+	source := string(taskFileContent)
+
 	if err := e.Run(context.TODO(), calls...); err != nil {
-		log.Error(err)
+		taskErr := fmt.Sprintf("%s\n%s", err.Error(), stripansi.Strip(errBuff.String()))
+		taskOutput := stripansi.Strip(outBuff.String())
+		if taskId, err := sendTask(configDir, server, environment, stackId, string(source), taskMap, globalsMap, &taskErr, &taskOutput); err != nil {
+			log.Error("failed to save task run data: ", err.Error())
+		} else {
+			log.Infof("\nSaved failed task run at %s/tasks/%s\n", server.Endpoint, taskId)
+		}
 		return err
 	}
 
+	if auth.IsLoggedIn(server) {
+		taskOutput := stripansi.Strip(outBuff.String())
+		if taskId, err := sendTask(configDir, server, environment, stackId, string(source), taskMap, globalsMap, nil, &taskOutput); err != nil {
+			log.Error("failed to save task run data: ", err.Error())
+		} else {
+			log.Infof("\nCreated task run at %s/tasks/%s\n", server.Endpoint, taskId)
+		}
+	}
 	return nil
+}
+
+type TaskData struct {
+	Stack       string                       `json:"stack"`
+	Identity    string                       `json:"identity,omitempty"`
+	Environment string                       `json:"environment"`
+	Git         *gitrepo.GitData             `json:"git,omitempty"`
+	Error       *string                      `json:"error"`
+	Output      *string                      `json:"output"`
+	Source      string                       `json:"source"`
+	Tasks       map[string]map[string]string `json:"tasks"`
+	Globals     map[string]string            `json:"globals"`
+}
+
+func sendTask(configDir string, server auth.ServerConfig, environment string, stack string, source string, tasks map[string]map[string]string, globals map[string]string, taskError *string, taskOutput *string) (string, error) {
+	taskData := TaskData{
+		Stack:       stack,
+		Identity:    "",
+		Environment: environment,
+		Git:         nil,
+		Source:      source,
+		Tasks:       tasks,
+		Globals:     globals,
+		Error:       taskError,
+		Output:      taskOutput,
+	}
+
+	gitData, err := gitrepo.GetGitData(configDir)
+	if err != nil {
+		return "", err
+	}
+	taskData.Git = gitData
+
+	data, err := utils.SendData(server, "tasks", &taskData)
+	if err != nil {
+		return "", err
+	}
+
+	taskResponse := make(map[string]string)
+	err = json.Unmarshal(data, &taskResponse)
+	if err != nil {
+		return "", err
+	}
+
+	return taskResponse["id"], nil
 }

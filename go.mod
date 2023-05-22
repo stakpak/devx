@@ -45,6 +45,7 @@ require (
 )
 
 require (
+	github.com/acarl005/stripansi v0.0.0-20180116102854-5a71ef0e047d
 	github.com/cockroachdb/apd/v2 v2.0.2 // indirect
 	github.com/emicklei/proto v1.11.0 // indirect
 	github.com/fatih/color v1.13.0
