@@ -80,6 +80,7 @@ func init() {
 		runCmd,
 		loginCmd,
 		retireCmd,
+		xrayCmd,
 	)
 
 	projectCmd.AddCommand(
