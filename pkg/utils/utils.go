@@ -394,7 +394,7 @@ func SendData(server auth.ServerConfig, apiPath string, data interface{}) ([]byt
 		}
 
 		if response.StatusCode == 401 {
-			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx login --tenant <your tenant>", errResponse.Message)
+			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
 		}
 
 		return nil, errors.New(errResponse.Message)
@@ -456,7 +456,7 @@ func GetData(server auth.ServerConfig, apiPath string, id *string, query map[str
 		}
 
 		if response.StatusCode == 401 {
-			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx login --tenant <your tenant>", errResponse.Message)
+			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
 		}
 
 		return nil, errors.New(errResponse.Message)

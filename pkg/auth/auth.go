@@ -71,7 +71,7 @@ func IsLoggedIn(server ServerConfig) bool {
 		return true
 	}
 
-	log.Info("Found Hub configurations but without a valid token, proceeding offline\nTry again after logging in using: devx login --tenant <your tenant>")
+	log.Info("Found Hub configurations but without a valid token, proceeding offline\nTry again after logging in using: devx auth --tenant <your tenant>")
 
 	return false
 }
@@ -282,7 +282,7 @@ func loadDefaultConfig() (string, Config, error) {
 			return tenant, cfg, nil
 		}
 	}
-	return "", Config{}, fmt.Errorf("no credentials found\nTry logging in using: devx login --tenant <your tenant>")
+	return "", Config{}, fmt.Errorf("no credentials found\nTry logging in using: devx auth --tenant <your tenant>")
 }
 
 func loadConfig() (ConfigFile, error) {
