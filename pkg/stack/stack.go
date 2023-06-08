@@ -235,13 +235,19 @@ func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environmen
 	build := BuildData{
 		Stack:       s.ID,
 		Identity:    "",
-		Result:      s.GetComponents(),
 		Imports:     s.DepIDs,
-		References:  s.GetReferences(),
 		Environment: environment,
 		Git:         nil,
 		Error:       buildError,
 		Source:      s.BuildSource,
+	}
+
+	if buildError == nil {
+		build.Result = s.GetComponents()
+		build.References = s.GetReferences()
+	} else {
+		build.Result = s.GetContext().CompileString("{}")
+		build.References = map[string][]Reference{}
 	}
 
 	gitData, err := gitrepo.GetGitData(configDir)
