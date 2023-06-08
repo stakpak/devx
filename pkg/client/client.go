@@ -133,6 +133,10 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	}
 
 	log.Info("\n📍 Processing current stack")
+	err = project.Update(configDir, server)
+	if err != nil {
+		return err
+	}
 	currentCtx := context.Background()
 	currentCtx = context.WithValue(currentCtx, utils.ConfigDirKey, configDir)
 	currentCtx = context.WithValue(currentCtx, utils.DryRunKey, true)
@@ -148,17 +152,20 @@ func Diff(target string, environment string, configDir string, stackPath string,
 	addColor := color.New(color.FgGreen)
 	updColor := color.New(color.FgYellow)
 	log.Info("\n🔬 Diff")
+	foundDiff := false
 	ci, ti := 0, 0
 	for ci < len(currentValues) || ti < len(targetValues) {
 		if ci == len(currentValues) {
 			tv := targetValues[ti]
 			log.Infof("\t%s %s: %s", remColor.Sprintf("-"), tv.Path, tv.Value)
+			foundDiff = true
 			ti++
 			continue
 		}
 		if ti == len(targetValues) {
 			cv := currentValues[ci]
 			log.Infof("\t%s %s: %s", addColor.Sprintf("+"), cv.Path, cv.Value)
+			foundDiff = true
 			ci++
 			continue
 		}
@@ -169,16 +176,23 @@ func Diff(target string, environment string, configDir string, stackPath string,
 		case 0:
 			if strings.Compare(cv.Value, tv.Value) != 0 {
 				log.Infof("\t%s %s: %s -> %s", updColor.Sprintf("~"), cv.Path, tv.Value, cv.Value)
+				foundDiff = true
 			}
 			ci++
 			ti++
 		case -1:
 			log.Infof("\t%s %s: %s", addColor.Sprintf("+"), cv.Path, cv.Value)
+			foundDiff = true
 			ci++
 		case 1:
 			log.Infof("\t%s %s: %s", remColor.Sprintf("-"), tv.Path, tv.Value)
+			foundDiff = true
 			ti++
 		}
+	}
+
+	if !foundDiff {
+		log.Infof("No changes found")
 	}
 
 	return nil

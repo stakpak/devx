@@ -410,18 +410,20 @@ func Update(configDir string, server auth.ServerConfig) error {
 				}
 
 				for _, info := range packageInfo {
-					pkgDir := path.Join(configDir, moduleDepPkgPath, info.Name())
-					log.Debug("Updating dependency ", pkgDir)
+					modPkgDir := path.Join(moduleDepPkgPath, info.Name())
+					pkgDir := path.Join(configDir, modPkgDir)
+					log.Debug("Updating dependency ", modPkgDir)
 					err = os.RemoveAll(pkgDir)
 					if err != nil {
 						return err
 					}
 
-					err = utils.FsWalk(*mfs, pkgDir, func(file string, content []byte) error {
-						if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+					err = utils.FsWalk(*mfs, modPkgDir, func(file string, content []byte) error {
+						writePath := path.Join(configDir, file)
+						if err := os.MkdirAll(filepath.Dir(writePath), 0755); err != nil {
 							return err
 						}
-						return os.WriteFile(file, content, 0700)
+						return os.WriteFile(writePath, content, 0700)
 					})
 					if err != nil {
 						return err
