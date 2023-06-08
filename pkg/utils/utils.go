@@ -327,7 +327,7 @@ func addAuthHeader(server auth.ServerConfig, request *http.Request) error {
 	var token *string
 	var err error
 	if server.Tenant == "" {
-		tenant, token, err = auth.GetDefaultToken()
+		tenant, token, err = auth.GetDefaultToken(server)
 		if err != nil {
 			return err
 		}
@@ -394,7 +394,7 @@ func SendData(server auth.ServerConfig, apiPath string, data interface{}) ([]byt
 		}
 
 		if response.StatusCode == 401 {
-			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
+			return nil, fmt.Errorf("authentication failed with error message: %s\n\nTry again using this flag --tenant <your tenant>\n\nOr authenticate using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
 		}
 
 		return nil, errors.New(errResponse.Message)
@@ -456,7 +456,7 @@ func GetData(server auth.ServerConfig, apiPath string, id *string, query map[str
 		}
 
 		if response.StatusCode == 401 {
-			return nil, fmt.Errorf("authentication failed with error message: %s\nTry logging in using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
+			return nil, fmt.Errorf("authentication failed with error message: %s\n\nTry again using this flag --tenant <your tenant>\n\nOr authenticate using\n\ndevx auth --tenant <your tenant>", errResponse.Message)
 		}
 
 		return nil, errors.New(errResponse.Message)

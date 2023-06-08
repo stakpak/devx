@@ -76,22 +76,41 @@ func IsLoggedIn(server ServerConfig) bool {
 	return false
 }
 
+func IsValidToken(cfg Config) bool {
+	return cfg.TokenExpiresOn != nil && cfg.TokenExpiresOn.After(time.Now())
+}
+
+func RefreshToken(server ServerConfig) (Config, error) {
+	err := Login(server)
+	if err != nil {
+		return Config{}, err
+	}
+
+	cfgMap, err := loadConfig()
+	if err != nil {
+		return Config{}, err
+	}
+
+	return cfgMap[server.Tenant], nil
+}
+
 func GetToken(server ServerConfig) (*string, error) {
-	cfg, err := loadConfig()
+	cfgMap, err := loadConfig()
 	if err != nil {
 		return nil, err
 	}
 
-	if _, ok := cfg[server.Tenant]; !ok {
-		err = Login(server)
+	cfg, exists := cfgMap[server.Tenant]
+	if !exists || !IsValidToken(cfg) {
+		cfg, err = RefreshToken(server)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return cfg[server.Tenant].Token, nil
+	return cfg.Token, nil
 }
 
-func GetDefaultToken() (string, *string, error) {
+func GetDefaultToken(server ServerConfig) (string, *string, error) {
 	tenant, cfg, err := loadDefaultConfig()
 	if err != nil {
 		return "", nil, err
@@ -100,6 +119,13 @@ func GetDefaultToken() (string, *string, error) {
 		return "", nil, nil
 	}
 
+	server.Tenant = tenant
+	if !IsValidToken(cfg) {
+		cfg, err = RefreshToken(server)
+		if err != nil {
+			return "", nil, err
+		}
+	}
 	return tenant, cfg.Token, nil
 }
 
