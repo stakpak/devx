@@ -11,8 +11,8 @@ DevX is a tool for building developer-centric interfaces for your internal devel
 
 ### Homebrew
 ```bash
-brew tap devopzilla/guku-devx
-brew install guku-devx       
+brew tap devopzilla/stakpak
+brew install devx       
 ```
 
 ### Download the binary

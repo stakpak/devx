@@ -31,14 +31,14 @@ changelog:
       - "^docs:"
       - "^test:"
 brews:
-  - homepage: "https://devx.guku.io/"
+  - homepage: "https://devx.stakpak.dev/"
     tap:
       owner: devopzilla
-      name: homebrew-guku-devx
+      name: homebrew-stakpak
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
 dockers:
   - image_templates:
-      - "ghcr.io/devopzilla/guku-devx:latest"
-      - "ghcr.io/devopzilla/guku-devx:{{ .Tag }}"
-      - "ghcr.io/devopzilla/guku-devx:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/devopzilla/devx:latest"
+      - "ghcr.io/devopzilla/devx:{{ .Tag }}"
+      - "ghcr.io/devopzilla/devx:v{{ .Major }}.{{ .Minor }}"
