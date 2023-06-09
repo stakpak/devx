@@ -21,7 +21,7 @@ brew install devx
 
 ### Docker image
 ```bash
-docker run --rm -v "$(pwd):/app" ghcr.io/devopzilla/guku-devx:latest -h
+docker run --rm -v "$(pwd):/app" ghcr.io/devopzilla/devx:latest -h
 ```
 
 ## Quick start
