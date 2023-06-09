@@ -17,7 +17,7 @@ brew install devx
 
 ### Download the binary
 
-[Releases page](https://github.com/devopzilla/guku-devx/releases)
+[Releases page](https://github.com/devopzilla/devx/releases)
 
 ### Docker image
 ```bash

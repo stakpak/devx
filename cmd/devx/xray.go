@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/guku-devx/pkg/xray"
+	"github.com/devopzilla/devx/pkg/xray"
 	"github.com/spf13/cobra"
 )
 

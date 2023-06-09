@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/devopzilla/guku-devx/pkg/auth"
+	"github.com/devopzilla/devx/pkg/auth"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 )
@@ -132,7 +132,7 @@ var versionCmd = &cobra.Command{
 func preRun(cmd *cobra.Command, args []string) {
 	setupLogging(cmd, args)
 
-	resp, err := http.Get("https://api.github.com/repos/devopzilla/guku-devx/releases?per_page=1")
+	resp, err := http.Get("https://api.github.com/repos/devopzilla/devx/releases?per_page=1")
 	if err == nil {
 		releases := []struct {
 			TagName string `json:"tag_name"`

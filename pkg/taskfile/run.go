@@ -13,10 +13,10 @@ import (
 	"cuelang.org/go/cue"
 	cueyaml "cuelang.org/go/encoding/yaml"
 
-	"github.com/devopzilla/guku-devx/pkg/auth"
-	"github.com/devopzilla/guku-devx/pkg/gitrepo"
-	"github.com/devopzilla/guku-devx/pkg/stackbuilder"
-	"github.com/devopzilla/guku-devx/pkg/utils"
+	"github.com/devopzilla/devx/pkg/auth"
+	"github.com/devopzilla/devx/pkg/gitrepo"
+	"github.com/devopzilla/devx/pkg/stackbuilder"
+	"github.com/devopzilla/devx/pkg/utils"
 
 	"mvdan.cc/sh/v3/syntax"
 

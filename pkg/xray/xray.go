@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/devopzilla/guku-devx/pkg/auth"
-	"github.com/devopzilla/guku-devx/pkg/utils"
+	"github.com/devopzilla/devx/pkg/auth"
+	"github.com/devopzilla/devx/pkg/utils"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
 )

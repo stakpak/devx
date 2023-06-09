@@ -10,9 +10,9 @@ import (
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
 	cueflow "cuelang.org/go/tools/flow"
-	"github.com/devopzilla/guku-devx/pkg/auth"
-	"github.com/devopzilla/guku-devx/pkg/gitrepo"
-	"github.com/devopzilla/guku-devx/pkg/utils"
+	"github.com/devopzilla/devx/pkg/auth"
+	"github.com/devopzilla/devx/pkg/gitrepo"
+	"github.com/devopzilla/devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
 )
 

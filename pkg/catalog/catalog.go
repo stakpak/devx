@@ -14,9 +14,9 @@ import (
 	"cuelang.org/go/cue/format"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/devopzilla/guku-devx/pkg/auth"
-	"github.com/devopzilla/guku-devx/pkg/gitrepo"
-	"github.com/devopzilla/guku-devx/pkg/utils"
+	"github.com/devopzilla/devx/pkg/auth"
+	"github.com/devopzilla/devx/pkg/gitrepo"
+	"github.com/devopzilla/devx/pkg/utils"
 )
 
 type CatalogItem struct {

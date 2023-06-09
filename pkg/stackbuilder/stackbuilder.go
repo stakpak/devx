@@ -10,8 +10,8 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/guku-devx/pkg/stack"
-	"github.com/devopzilla/guku-devx/pkg/utils"
+	"github.com/devopzilla/devx/pkg/stack"
+	"github.com/devopzilla/devx/pkg/utils"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 )
