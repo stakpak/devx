@@ -9,6 +9,7 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/ast"
 	"cuelang.org/go/cue/ast/astutil"
+	"cuelang.org/go/cue/cuecontext"
 	cueflow "cuelang.org/go/tools/flow"
 	"github.com/devopzilla/devx/pkg/auth"
 	"github.com/devopzilla/devx/pkg/gitrepo"
@@ -246,7 +247,7 @@ func (s *Stack) SendBuild(configDir string, server auth.ServerConfig, environmen
 		build.Result = s.GetComponents()
 		build.References = s.GetReferences()
 	} else {
-		build.Result = s.GetContext().CompileString("{}")
+		build.Result = cuecontext.New().CompileString("{}")
 		build.References = map[string][]Reference{}
 	}
 
