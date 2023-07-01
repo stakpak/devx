@@ -2,9 +2,9 @@
 
 ## Introduction
 
-DevX is a tool for building developer-centric interfaces for your internal developer platform (IDP). Use DevX to build flexible internal standards, prevent misconfigurations early, and enable infrastructure self-service.
+DevX is a tool for building your own Internal Developer Platform. Use DevX to build flexible internal standards, prevent misconfigurations early, and enable infrastructure self-service.
 
-**Developer-centric configurations using a single config for all envrionments, for all vendors!**
+**Developer-centric configurations using a single config for all environments, for all vendors!**
 ![alt text](https://devx.stakpak.dev/assets/images/image02.png)
 
 ## Installation
