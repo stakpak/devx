@@ -108,7 +108,7 @@ func init() {
 
 var rootCmd = &cobra.Command{
 	Use:              "devx",
-	Short:            "guku DevX cloud native self-service magic",
+	Short:            "DevX cloud native self-service magic",
 	SilenceUsage:     true,
 	PersistentPreRun: preRun,
 }
