@@ -558,7 +558,7 @@ func Init(ctx context.Context, parentDir, module string) error {
 
 		ctx := cuecontext.New()
 		if err := updateModuleFile(parentDir, ctx, module, map[string]catalog.ModuleDependency{
-			"github.com/stakpak/guku-devx-catalog": {
+			"github.com/stakpak/devx-catalog": {
 				V: nil,
 			},
 		}); err != nil {
