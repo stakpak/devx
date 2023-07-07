@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/devx/pkg/xray"
 	"github.com/spf13/cobra"
+	"github.com/stakpak/devx/pkg/xray"
 )
 
 var xrayCmd = &cobra.Command{

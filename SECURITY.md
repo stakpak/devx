@@ -10,5 +10,5 @@
 ## Reporting a Vulnerability
 
 Please report vulnerabilities by e-mail to the following address:
-+ contact@devopzilla.com
++ contact@stakpak.dev
 

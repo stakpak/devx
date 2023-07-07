@@ -6,10 +6,10 @@ import (
 	"path"
 
 	"cuelang.org/go/cue"
-	"github.com/devopzilla/devx/pkg/stack"
-	"github.com/devopzilla/devx/pkg/stackbuilder"
-	"github.com/devopzilla/devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/stack"
+	"github.com/stakpak/devx/pkg/stackbuilder"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 type JSONDriver struct {

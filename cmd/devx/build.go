@@ -4,8 +4,8 @@ import (
 	"fmt"
 
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/devx/pkg/client"
 	"github.com/spf13/cobra"
+	"github.com/stakpak/devx/pkg/client"
 )
 
 var buildCmd = &cobra.Command{

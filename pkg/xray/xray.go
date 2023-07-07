@@ -6,10 +6,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/devopzilla/devx/pkg/auth"
-	"github.com/devopzilla/devx/pkg/utils"
 	"github.com/olekukonko/tablewriter"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/auth"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 type XRayRequest struct {

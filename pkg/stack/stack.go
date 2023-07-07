@@ -11,10 +11,10 @@ import (
 	"cuelang.org/go/cue/ast/astutil"
 	"cuelang.org/go/cue/cuecontext"
 	cueflow "cuelang.org/go/tools/flow"
-	"github.com/devopzilla/devx/pkg/auth"
-	"github.com/devopzilla/devx/pkg/gitrepo"
-	"github.com/devopzilla/devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/auth"
+	"github.com/stakpak/devx/pkg/gitrepo"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 type Stack struct {

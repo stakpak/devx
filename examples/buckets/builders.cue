@@ -1,10 +1,10 @@
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/components"
-	"guku.io/devx/v1/transformers/compose"
-	tfaws "guku.io/devx/v1/transformers/terraform/aws"
+	"stakpak.dev/devx/v1"
+	"stakpak.dev/devx/v1/components"
+	"stakpak.dev/devx/v1/transformers/compose"
+	tfaws "stakpak.dev/devx/v1/transformers/terraform/aws"
 )
 
 builders: v1.#StackBuilder

@@ -7,9 +7,9 @@ import (
 	"github.com/spf13/cobra"
 
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/devx/pkg/catalog"
-	"github.com/devopzilla/devx/pkg/policy"
-	"github.com/devopzilla/devx/pkg/project"
+	"github.com/stakpak/devx/pkg/catalog"
+	"github.com/stakpak/devx/pkg/policy"
+	"github.com/stakpak/devx/pkg/project"
 )
 
 var projectCmd = &cobra.Command{

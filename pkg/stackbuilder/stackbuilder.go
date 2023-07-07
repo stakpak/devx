@@ -10,10 +10,10 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/errors"
-	"github.com/devopzilla/devx/pkg/stack"
-	"github.com/devopzilla/devx/pkg/utils"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/stack"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 type Environments = map[string]*StackBuilder

@@ -33,12 +33,12 @@ changelog:
 brews:
   - homepage: "https://devx.stakpak.dev/"
     tap:
-      owner: devopzilla
+      owner: stakpak
       name: homebrew-stakpak
       branch: main
       token: "{{ .Env.HOMEBREW_TAP_GITHUB_TOKEN }}"
 dockers:
   - image_templates:
-      - "ghcr.io/devopzilla/devx:latest"
-      - "ghcr.io/devopzilla/devx:{{ .Tag }}"
-      - "ghcr.io/devopzilla/devx:v{{ .Major }}.{{ .Minor }}"
+      - "ghcr.io/stakpak/devx:latest"
+      - "ghcr.io/stakpak/devx:{{ .Tag }}"
+      - "ghcr.io/stakpak/devx:v{{ .Major }}.{{ .Minor }}"

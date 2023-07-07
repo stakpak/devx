@@ -11,17 +11,17 @@ DevX is a tool for building your own Internal Developer Platform. Use DevX to bu
 
 ### Homebrew
 ```bash
-brew tap devopzilla/stakpak
+brew tap stakpak/stakpak
 brew install devx       
 ```
 
 ### Download the binary
 
-[Releases page](https://github.com/devopzilla/devx/releases)
+[Releases page](https://github.com/stakpak/devx/releases)
 
 ### Docker image
 ```bash
-docker run --rm -v "$(pwd):/app" ghcr.io/devopzilla/devx:latest -h
+docker run --rm -v "$(pwd):/app" ghcr.io/stakpak/devx:latest -h
 ```
 
 ## Quick start
@@ -52,8 +52,8 @@ You create a stack to define the workload and its dependencies.
 package main
 
 import (
-    "guku.io/devx/v1"
-    "guku.io/devx/v1/traits"
+    "stakpak.dev/devx/v1"
+    "stakpak.dev/devx/v1/traits"
 )
 
 stack: v1.#Stack & {
@@ -76,8 +76,8 @@ You can customize how the stack is processed by writing declarative transformers
 package main
 
 import (
-    "guku.io/devx/v2alpha1"
-    "guku.io/devx/v2alpha1/environments"
+    "stakpak.dev/devx/v2alpha1"
+    "stakpak.dev/devx/v2alpha1/environments"
 )
 
 builders: v2alpha1.#Environments & {
@@ -95,7 +95,7 @@ Validate configurations while writing
 ### Platform capability discovery
 ```bash
 ➜ devx project discover --transformers
-[🏷️  traits] "guku.io/devx/v1/traits"
+[🏷️  traits] "stakpak.dev/devx/v1/traits"
 traits.#Workload	a component that runs a container 
 traits.#Replicable	a component that can be horizontally scaled 
 traits.#Exposable	a component that has endpoints that can be exposed 
@@ -104,15 +104,15 @@ traits.#Helm	a helm chart using helm repo
 traits.#HelmGit	a helm chart using git 
 traits.#HelmOCI	a helm chart using oci 
 
-[🏭 transformers] "guku.io/devx/v1/transformers/argocd"
+[🏭 transformers] "stakpak.dev/devx/v1/transformers/argocd"
 argocd.#AddHelmRelease	add a helm release  (requires trait:Helm)
 
-[🏭 transformers] "guku.io/devx/v1/transformers/compose"
+[🏭 transformers] "stakpak.dev/devx/v1/transformers/compose"
 compose.#AddComposeService	add a compose service  (requires trait:Workload)
 compose.#ExposeComposeService	expose a compose service ports  (requires trait:Exposable)
 compose.#AddComposePostgres	add a compose service for a postgres database  (requires trait:Postgres)
 
-[🏭 transformers] "guku.io/devx/v1/transformers/terraform"
+[🏭 transformers] "stakpak.dev/devx/v1/transformers/terraform"
 terraform.#AddHelmRelease	add a helm release  (requires trait:Helm)
 ```
 

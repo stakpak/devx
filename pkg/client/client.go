@@ -15,12 +15,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/devopzilla/devx/pkg/auth"
-	"github.com/devopzilla/devx/pkg/drivers"
-	"github.com/devopzilla/devx/pkg/project"
-	"github.com/devopzilla/devx/pkg/stack"
-	"github.com/devopzilla/devx/pkg/stackbuilder"
-	"github.com/devopzilla/devx/pkg/utils"
+	"github.com/stakpak/devx/pkg/auth"
+	"github.com/stakpak/devx/pkg/drivers"
+	"github.com/stakpak/devx/pkg/project"
+	"github.com/stakpak/devx/pkg/stack"
+	"github.com/stakpak/devx/pkg/stackbuilder"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 func Run(environment string, configDir string, stackPath string, buildersPath string, reserve bool, dryRun bool, server auth.ServerConfig, noStrict bool, stdout bool) error {

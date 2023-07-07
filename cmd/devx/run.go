@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/devopzilla/devx/pkg/taskfile"
 	"github.com/spf13/cobra"
+	"github.com/stakpak/devx/pkg/taskfile"
 )
 
 var runFlags taskfile.RunFlags

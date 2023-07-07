@@ -5,9 +5,9 @@ import (
 
 	"cuelang.org/go/cue"
 	"cuelang.org/go/encoding/gocode/gocodec"
-	"github.com/devopzilla/devx/pkg/auth"
-	"github.com/devopzilla/devx/pkg/utils"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/auth"
+	"github.com/stakpak/devx/pkg/utils"
 )
 
 var policyNamePath = cue.ParsePath("$metadata.policy")

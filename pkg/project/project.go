@@ -15,12 +15,6 @@ import (
 	"cuelang.org/go/cue"
 	"cuelang.org/go/cue/cuecontext"
 	"cuelang.org/go/cue/format"
-	"github.com/devopzilla/devx/pkg/auth"
-	"github.com/devopzilla/devx/pkg/catalog"
-	"github.com/devopzilla/devx/pkg/gitrepo"
-	"github.com/devopzilla/devx/pkg/stack"
-	"github.com/devopzilla/devx/pkg/stackbuilder"
-	"github.com/devopzilla/devx/pkg/utils"
 	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-billy/v5/memfs"
 	"github.com/go-git/go-git/v5"
@@ -29,6 +23,12 @@ import (
 	"github.com/go-git/go-git/v5/plumbing/transport/ssh"
 	"github.com/go-git/go-git/v5/storage/memory"
 	log "github.com/sirupsen/logrus"
+	"github.com/stakpak/devx/pkg/auth"
+	"github.com/stakpak/devx/pkg/catalog"
+	"github.com/stakpak/devx/pkg/gitrepo"
+	"github.com/stakpak/devx/pkg/stack"
+	"github.com/stakpak/devx/pkg/stackbuilder"
+	"github.com/stakpak/devx/pkg/utils"
 	"golang.org/x/mod/semver"
 )
 
@@ -168,8 +168,8 @@ func Generate(configDir string) error {
 	os.WriteFile(appPath, []byte(`package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/traits"
+	"stakpak.dev/devx/v1"
+	"stakpak.dev/devx/v1/traits"
 )
 
 stack: v1.#Stack & {
@@ -190,8 +190,8 @@ stack: v1.#Stack & {
 	os.WriteFile(builderPath, []byte(`package main
 
 import (
-	"guku.io/devx/v2alpha1"
-	"guku.io/devx/v2alpha1/environments"
+	"stakpak.dev/devx/v2alpha1"
+	"stakpak.dev/devx/v2alpha1/environments"
 )
 
 builders: v2alpha1.#Environments & {
@@ -402,7 +402,7 @@ func Update(configDir string, server auth.ServerConfig) error {
 			}
 
 			log.Debugf("Updating packages %s dependencies", pkgDir)
-			if strings.HasPrefix(modulePrefix, "guku.io/devx") {
+			if strings.HasPrefix(modulePrefix, "stakpak.dev/devx") {
 				moduleDepPkgPath := path.Join("cue.mod", "pkg")
 				packageInfo, err := (*mfs).ReadDir(moduleDepPkgPath)
 				if err != nil {
@@ -558,7 +558,7 @@ func Init(ctx context.Context, parentDir, module string) error {
 
 		ctx := cuecontext.New()
 		if err := updateModuleFile(parentDir, ctx, module, map[string]catalog.ModuleDependency{
-			"github.com/devopzilla/guku-devx-catalog": {
+			"github.com/stakpak/guku-devx-catalog": {
 				V: nil,
 			},
 		}); err != nil {

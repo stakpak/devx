@@ -1,8 +1,8 @@
 package main
 
 import (
-	"github.com/devopzilla/devx/pkg/auth"
 	"github.com/spf13/cobra"
+	"github.com/stakpak/devx/pkg/auth"
 )
 
 var loginCmd = &cobra.Command{

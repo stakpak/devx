@@ -1,6 +1,6 @@
 import:
-  v1: "guku.io/devx/v1"
-  traits: "guku.io/devx/v1/traits"
+  v1: "stakpak.dev/devx/v1"
+  traits: "stakpak.dev/devx/v1/traits"
 
 stack:
   $schema:

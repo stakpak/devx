@@ -1,9 +1,9 @@
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/transformers/argocd"
-	terraform "guku.io/devx/v1/transformers/terraform/helm"
+	"stakpak.dev/devx/v1"
+	"stakpak.dev/devx/v1/transformers/argocd"
+	terraform "stakpak.dev/devx/v1/transformers/terraform/helm"
 )
 
 builders: v1.#StackBuilder & {

@@ -1,10 +1,10 @@
 package main
 
 import (
-	"guku.io/devx/v1"
-	"guku.io/devx/v1/transformers/compose"
-	tfaws "guku.io/devx/v1/transformers/terraform/aws"
-	k8s "guku.io/devx/v1/transformers/kubernetes"
+	"stakpak.dev/devx/v1"
+	"stakpak.dev/devx/v1/transformers/compose"
+	tfaws "stakpak.dev/devx/v1/transformers/terraform/aws"
+	k8s "stakpak.dev/devx/v1/transformers/kubernetes"
 )
 
 builders: v1.#StackBuilder & {
