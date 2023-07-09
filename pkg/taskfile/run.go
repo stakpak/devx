@@ -139,15 +139,14 @@ func Run(configDir string, buildersPath string, server auth.ServerConfig, runFla
 		return err
 	}
 
-	if listOptions.ShouldListTasks() {
-		e.ListTaskNames(runFlags.ListAll)
-		return nil
-	}
-
 	err = e.Setup()
 	if err != nil {
 		log.Error(err)
 		return err
+	}
+
+	if len(args) == 0 && !listOptions.ShouldListTasks() {
+		listOptions.ListAllTasks = true
 	}
 
 	if listOptions.ShouldListTasks() {
