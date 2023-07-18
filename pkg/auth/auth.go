@@ -230,7 +230,6 @@ func Login(server ServerConfig) error {
 		queryCode := r.URL.Query().Get("code")
 		if r.Method == "GET" && queryCode != "" {
 			codeCh <- queryCode
-			close(codeCh)
 			http.Redirect(w, r, fmt.Sprintf("%s/cli-success", *cfg.Endpoint), http.StatusTemporaryRedirect)
 		}
 
