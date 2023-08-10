@@ -3,7 +3,7 @@ module github.com/stakpak/devx
 go 1.18
 
 require (
-	cuelang.org/go v0.6.0-alpha.2
+	cuelang.org/go v0.6.0
 	github.com/go-git/go-billy/v5 v5.3.1
 	golang.org/x/mod v0.9.0
 	mvdan.cc/sh/v3 v3.6.0

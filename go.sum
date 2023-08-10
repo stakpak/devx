@@ -1,5 +1,5 @@
-cuelang.org/go v0.6.0-alpha.2 h1:7HRnexrOVLT+isLFeFEsZ/DfnZ/28+Wwn0bBU4dowIA=
-cuelang.org/go v0.6.0-alpha.2/go.mod h1:PTRw1+DrzCDmGIHM00bLxnwGEYlblJ5Lql4jgprAh2c=
+cuelang.org/go v0.6.0 h1:dJhgKCog+FEZt7OwAYV1R+o/RZPmE8aqFoptmxSWyr8=
+cuelang.org/go v0.6.0/go.mod h1:9CxOX8aawrr3BgSdqPj7V0RYoXo7XIb+yDFC6uESrOQ=
 github.com/Microsoft/go-winio v0.4.14/go.mod h1:qXqCSQ3Xa7+6tgxaGTIe4Kpcdsi+P8jBhyzoq1bpyYA=
 github.com/Microsoft/go-winio v0.4.16 h1:FtSW/jqD+l4ba5iPBj9CODVtgfYAD8w2wS923g/cFDk=
 github.com/Microsoft/go-winio v0.4.16/go.mod h1:XB6nPKklQyQ7GC9LdcBEcBl8PF76WugXOPRXwdLnMv0=
