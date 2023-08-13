@@ -214,7 +214,7 @@ func Login(server ServerConfig) error {
 	browser.Stdout = io.Discard
 	err = browser.OpenURL(loginURL)
 	if err != nil {
-		return err
+		log.Info("Unable to open your browser")
 	}
 	log.Info("Check your browser to complete the login flow")
 	log.Info("Or paste this in your browser")
