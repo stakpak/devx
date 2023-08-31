@@ -3,6 +3,7 @@ package drivers
 import (
 	"fmt"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -29,15 +30,18 @@ type Manifest struct {
 }
 
 func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
-	manifests := []Manifest{}
+	manifests := map[string]Manifest{}
+	defaultFilePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
 
 	for _, componentId := range stack.GetTasks() {
 		component, _ := stack.GetComponent(componentId)
 
 		resourceIter, _ := component.LookupPath(cue.ParsePath("$resources")).Fields()
 		for resourceIter.Next() {
-			if d.match(resourceIter.Value()) {
-				resource, err := utils.RemoveMeta(resourceIter.Value())
+			v := resourceIter.Value()
+			if d.match(v) {
+				resource, err := utils.RemoveMeta(v)
+				filePath := defaultFilePath
 				if err != nil {
 					return err
 				}
@@ -67,10 +71,20 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 					return err
 				}
 
-				manifests = append(manifests, Manifest{
+				outputSubdirLabel := v.LookupPath(cue.ParsePath("$metadata.labels.\"output-subdir\""))
+				if outputSubdirLabel.Exists() {
+					outputSubdir, err := outputSubdirLabel.String()
+					if err != nil {
+						return err
+					}
+
+					filePath = path.Join(d.Config.Output.Dir, outputSubdir, d.Config.Output.File)
+				}
+
+				manifests[filePath] = Manifest{
 					Name: fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString)),
 					Data: data,
-				})
+				}
 			}
 		}
 	}
@@ -97,30 +111,30 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	}
 
 	if d.Config.Output.File == "" {
-		for _, m := range manifests {
-			filePath := filepath.Join(d.Config.Output.Dir, m.Name)
-			os.WriteFile(filePath, m.Data, 0700)
+		for filePath, fileValue := range manifests {
+			filePath := filepath.Join(filePath, fileValue.Name)
+			os.WriteFile(filePath, fileValue.Data, 0700)
 		}
 		log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Config.Output.Dir)
 		return nil
 	}
 
-	filePath := filepath.Join(d.Config.Output.Dir, d.Config.Output.File)
-	_, err := os.Stat(filePath)
-	if !os.IsNotExist(err) {
-		os.Remove(filePath)
-	}
-	file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
+	for filePath, fileValue := range manifests {
+		_, err := os.Stat(filePath)
+		if !os.IsNotExist(err) {
+			os.Remove(filePath)
+		}
+		file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
 
-	for _, m := range manifests {
 		file.Write([]byte("---\n"))
-		file.Write(m.Data)
+		file.Write(fileValue.Data)
+
+		log.Infof("[kubernetes] applied resources to \"%s\"", filePath)
 	}
-	log.Infof("[kubernetes] applied resources to \"%s\"", filePath)
 
 	return nil
 }
