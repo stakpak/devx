@@ -24,13 +24,8 @@ func (d *KubernetesDriver) match(resource cue.Value) bool {
 	return driverName == "kubernetes"
 }
 
-type Manifest struct {
-	Name string
-	Data []byte
-}
-
 func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
-	manifests := map[string]Manifest{}
+	manifests := map[string][]byte{}
 	defaultFilePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
 
 	for _, componentId := range stack.GetTasks() {
@@ -72,6 +67,7 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 				}
 
 				outputSubdirLabel := v.LookupPath(cue.ParsePath("$metadata.labels.\"output-subdir\""))
+
 				if outputSubdirLabel.Exists() {
 					outputSubdir, err := outputSubdirLabel.String()
 					if err != nil {
@@ -80,11 +76,8 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 
 					filePath = path.Join(d.Config.Output.Dir, outputSubdir, d.Config.Output.File)
 				}
-
-				manifests[filePath] = Manifest{
-					Name: fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString)),
-					Data: data,
-				}
+				filePath = filepath.Join(filePath, fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString)))
+				manifests[filePath] = data
 			}
 		}
 	}
@@ -98,7 +91,7 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 			if _, err := os.Stdout.Write([]byte("---\n")); err != nil {
 				return err
 			}
-			if _, err := os.Stdout.Write(m.Data); err != nil {
+			if _, err := os.Stdout.Write(m); err != nil {
 				return err
 			}
 		}
@@ -112,8 +105,8 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 
 	if d.Config.Output.File == "" {
 		for filePath, fileValue := range manifests {
-			filePath := filepath.Join(filePath, fileValue.Name)
-			os.WriteFile(filePath, fileValue.Data, 0700)
+
+			os.WriteFile(filePath, fileValue, 0700)
 		}
 		log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Config.Output.Dir)
 		return nil
@@ -131,7 +124,7 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		defer file.Close()
 
 		file.Write([]byte("---\n"))
-		file.Write(fileValue.Data)
+		file.Write(fileValue)
 
 		log.Infof("[kubernetes] applied resources to \"%s\"", filePath)
 	}
