@@ -35,8 +35,18 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		for resourceIter.Next() {
 			v := resourceIter.Value()
 			if d.match(v) {
-				resource, err := utils.RemoveMeta(v)
 				filePath := defaultFilePath
+				outputSubdirLabel := v.LookupPath(cue.ParsePath("$metadata.labels.\"output-subdir\""))
+				if outputSubdirLabel.Exists() {
+					outputSubdir, err := outputSubdirLabel.String()
+					if err != nil {
+						return err
+					}
+
+					filePath = path.Join(d.Config.Output.Dir, outputSubdir, d.Config.Output.File)
+				}
+
+				resource, err := utils.RemoveMeta(v)
 				if err != nil {
 					return err
 				}
@@ -66,17 +76,8 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 					return err
 				}
 
-				outputSubdirLabel := v.LookupPath(cue.ParsePath("$metadata.labels.\"output-subdir\""))
-
-				if outputSubdirLabel.Exists() {
-					outputSubdir, err := outputSubdirLabel.String()
-					if err != nil {
-						return err
-					}
-
-					filePath = path.Join(d.Config.Output.Dir, outputSubdir, d.Config.Output.File)
-				}
 				filePath = filepath.Join(filePath, fmt.Sprintf("%s-%s.yml", nameString, strings.ToLower(kindString)))
+
 				manifests[filePath] = data
 			}
 		}
@@ -86,45 +87,29 @@ func (d *KubernetesDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		return nil
 	}
 
-	if stdout {
-		for _, m := range manifests {
+	for filePath, fileValue := range manifests {
+
+		if stdout {
 			if _, err := os.Stdout.Write([]byte("---\n")); err != nil {
 				return err
 			}
-			if _, err := os.Stdout.Write(m); err != nil {
+			if _, err := os.Stdout.Write(fileValue); err != nil {
 				return err
 			}
+			_, err := os.Stdout.Write([]byte("\n"))
+			return err
 		}
-		_, err := os.Stdout.Write([]byte("\n"))
-		return err
-	}
 
-	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
-		os.MkdirAll(d.Config.Output.Dir, 0700)
-	}
-
-	if d.Config.Output.File == "" {
-		for filePath, fileValue := range manifests {
-
-			os.WriteFile(filePath, fileValue, 0700)
+		if _, err := os.Stat(filepath.Dir(filePath)); os.IsNotExist(err) {
+			os.MkdirAll(filepath.Dir(filePath), 0700)
 		}
-		log.Infof("[kubernetes] applied resources to \"%s/*.yml\"", d.Config.Output.Dir)
-		return nil
-	}
-
-	for filePath, fileValue := range manifests {
 		_, err := os.Stat(filePath)
+
 		if !os.IsNotExist(err) {
 			os.Remove(filePath)
 		}
-		file, err := os.OpenFile(filePath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0700)
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer file.Close()
 
-		file.Write([]byte("---\n"))
-		file.Write(fileValue)
+		os.WriteFile(filePath, fileValue, 0700)
 
 		log.Infof("[kubernetes] applied resources to \"%s\"", filePath)
 	}
