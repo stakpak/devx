@@ -41,7 +41,7 @@ func NewEnvironments(value cue.Value) (Environments, error) {
 	}
 
 	for envIter.Next() {
-		name := utils.GetLastPathFragment(envIter.Value())
+		name := strings.Trim(utils.GetLastPathFragment(envIter.Value()), "\"")
 		environments[name], err = NewStackBuilder(name, envIter.Value())
 		if err != nil {
 			return environments, err
