@@ -60,7 +60,7 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 		os.MkdirAll(d.Config.Output.Dir, 0700)
 	}
 	filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
-	os.WriteFile(filePath, data, 0700)
+	os.WriteFile(filePath, data, 0600)
 
 	log.Infof("[compose] applied resources to \"%s\"", filePath)
 
