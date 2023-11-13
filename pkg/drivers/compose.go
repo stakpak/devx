@@ -57,10 +57,14 @@ func (d *ComposeDriver) ApplyAll(stack *stack.Stack, stdout bool) error {
 	}
 
 	if _, err := os.Stat(d.Config.Output.Dir); os.IsNotExist(err) {
-		os.MkdirAll(d.Config.Output.Dir, 0700)
+		if err := os.MkdirAll(d.Config.Output.Dir, 0700); err != nil {
+			return err
+		}
 	}
 	filePath := path.Join(d.Config.Output.Dir, d.Config.Output.File)
-	os.WriteFile(filePath, data, 0600)
+	if err := os.WriteFile(filePath, data, 0600); err != nil {
+		return err
+	}
 
 	log.Infof("[compose] applied resources to \"%s\"", filePath)
 
